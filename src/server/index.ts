@@ -52,9 +52,15 @@ const app = new Elysia()
     set.headers["X-Frame-Options"] = "SAMEORIGIN";
     set.headers["X-XSS-Protection"] = "1; mode=block";
     set.headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    // CSP Ajustado para Fontes e Performance (Allow Data URIs for Scripts too)
+    // CSP Ajustado para Fontes, Performance e Playground (Monaco Editor + API)
     set.headers["Content-Security-Policy"] =
-      "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:;";
+      "default-src 'self'; " +
+      "img-src 'self' data: https:; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://cdnjs.cloudflare.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
+      "font-src 'self' data: https://fonts.gstatic.com; " +
+      "connect-src 'self' https: http://localhost:* ws://localhost:*; " +
+      "worker-src 'self' blob:;";
   })
 
   // Debug Middleware
