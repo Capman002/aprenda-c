@@ -52,9 +52,9 @@ const app = new Elysia()
     set.headers["X-Frame-Options"] = "SAMEORIGIN";
     set.headers["X-XSS-Protection"] = "1; mode=block";
     set.headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    // CSP Ajustado para Fontes e Performance (Data URIs e Blobs necessários para fontes modernas)
+    // CSP Ajustado para Fontes e Performance (Allow Data URIs for Scripts too)
     set.headers["Content-Security-Policy"] =
-      "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:;";
+      "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:;";
   })
 
   // Debug Middleware
