@@ -20,7 +20,7 @@ int main() {
 #include "utils.h"
 
 int main() {
-    printf("Hello, Robotics CS!\\n");
+    printf("Hello, Aprenda C!\\n");
     
     int result = add(10, 20);
     printf("10 + 20 = %d\\n", result);

@@ -151,21 +151,53 @@ if (isProduction && existsSync(frontendDistPath)) {
     }),
   );
 
-  // Fallback para SPA - retorna index.html para qualquer rota não encontrada (HTML)
+  // Fallback inteligente para SSG (Astro) e SPA
   app.get("*", async ({ path, set }) => {
-    // Se parecer um asset (tem extensão), tenta servir arquivo direto antes do fallback
+    // 1. Se tiver extensão, tenta servir direto (assets)
     if (path.includes(".") && !path.endsWith(".html")) {
       const assetPath = join(frontendDistPath, path);
-      if (existsSync(assetPath)) {
-        return Bun.file(assetPath);
-      }
+      if (existsSync(assetPath)) return Bun.file(assetPath);
     }
 
-    set.headers["content-type"] = "text/html";
-    const indexPath = join(frontendDistPath, "index.html");
-    return new Response(await Bun.file(indexPath).text(), {
-      headers: { "content-type": "text/html" },
-    });
+    // 2. Tenta encontrar a página HTML correspondente (SSG)
+    // Tenta: /caminho/index.html (Padrão Astro para subpastas)
+    let potentialHtml = join(frontendDistPath, path, "index.html");
+    if (existsSync(potentialHtml)) {
+      set.headers["content-type"] = "text/html";
+      return Bun.file(potentialHtml);
+    }
+
+    // Tenta: /caminho.html
+    potentialHtml = join(frontendDistPath, `${path}.html`);
+    if (existsSync(potentialHtml)) {
+      set.headers["content-type"] = "text/html";
+      return Bun.file(potentialHtml);
+    }
+
+    // Tenta: /caminho (se for arquivo exato html)
+    potentialHtml = join(frontendDistPath, path);
+    if (
+      existsSync(potentialHtml) &&
+      (path.endsWith(".html") || !path.includes("."))
+    ) {
+      set.headers["content-type"] = "text/html";
+      return Bun.file(potentialHtml);
+    }
+
+    // 3. Fallback final (404 ou SPA root)
+    // Se existir 404.html (gerado pelo Astro), usa ele
+    const notFoundPath = join(frontendDistPath, "404.html");
+    if (existsSync(notFoundPath)) {
+      set.status = 404;
+      set.headers["content-type"] = "text/html";
+      return Bun.file(notFoundPath);
+    }
+
+    // Último recurso: index.html da raiz
+    // Só use isso se tiver certeza que é SPA, senão pode causar loops estranhos em SSG
+    // Para Astro SSG, melhor retornar 404 simples se não achou nada
+    set.status = 404;
+    return "Página não encontrada (404)";
   });
 
   console.log(`📁 Static files enabled from: ${frontendDistPath}`);
