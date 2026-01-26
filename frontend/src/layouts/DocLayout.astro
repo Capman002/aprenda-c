@@ -11,6 +11,13 @@ const { frontmatter, prev, next, headings = [] } = Astro.props;
 // Filter headings for TOC (H2 and H3 only)
 const tocHeadings = headings.filter((h: any) => h.depth > 1 && h.depth <= 3);
 
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/500.css";
+
 const canonicalURL = new URL(Astro.url.pathname, SITE.url);
 const description = frontmatter.description || SITE.description;
 const image = frontmatter.image || SITE.defaultImage;
@@ -88,10 +95,6 @@ const jsonLd = {
     <!-- Schema.org JSON-LD -->
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
-		<!-- Fonte Inter para UI e JetBrains Mono para código -->
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 		<ClientRouter />
 	</head>
 	<body>

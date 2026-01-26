@@ -147,16 +147,29 @@ if (isProduction && existsSync(frontendDistPath)) {
       assets: frontendDistPath,
       prefix: "", // No prefixo para servir na raiz
       alwaysStatic: true, // Forçar modo estático
-      ignorePatterns: [/index\.html/], // Não servir index.html via estático automaticamente, deixar pro fallback
+      ignorePatterns: [/index\.html/], // Não servir index.html via estático automaticamente
+      headers: {
+        // Cache agressivo para assets buildados (geralmente hash-based)
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
     }),
   );
 
   // Fallback inteligente para SSG (Astro) e SPA
   app.get("*", async ({ path, set }) => {
-    // 1. Se tiver extensão, tenta servir direto (assets)
+    // 1. Se tiver extensão, tenta servir direto (assets perdidos pelo plugin)
     if (path.includes(".") && !path.endsWith(".html")) {
       const assetPath = join(frontendDistPath, path);
-      if (existsSync(assetPath)) return Bun.file(assetPath);
+      if (existsSync(assetPath)) {
+        // Se for da pasta _astro ou fontes, cache longo
+        if (path.includes("/_astro/") || path.includes("/fonts/")) {
+          set.headers["Cache-Control"] = "public, max-age=31536000, immutable";
+        } else {
+          // Outros estáticos (favicon, robots): cache menor (1h)
+          set.headers["Cache-Control"] = "public, max-age=3600";
+        }
+        return Bun.file(assetPath);
+      }
     }
 
     // 2. Tenta encontrar a página HTML correspondente (SSG)
