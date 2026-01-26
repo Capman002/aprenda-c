@@ -11,6 +11,7 @@ const course = defineCollection({
       .default("Iniciante"),
     tags: z.array(z.string()).optional().default([]),
     updated: z.date().optional(),
+    module: z.string().optional(),
   }),
 });
 

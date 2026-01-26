@@ -10,9 +10,17 @@ function groupByModule(docs: typeof allDocs) {
   const groups: Record<string, typeof allDocs> = {};
   
   docs.forEach(doc => {
-    const [folder] = doc.slug.split('/');
-    if (!groups[folder]) groups[folder] = [];
-    groups[folder].push(doc);
+    // Usa o campo 'module' do frontmatter (migrado) ou fallback para pasta do slug
+    let groupKey = doc.data.module || 'Outros';
+    
+    // Fallback legado se a migração falhar (usa slug folder)
+    if (!doc.data.module) {
+        const [folder] = doc.slug.split('/');
+        groupKey = formatTitle(folder);
+    }
+
+    if (!groups[groupKey]) groups[groupKey] = [];
+    groups[groupKey].push(doc);
   });
 
   return groups;
@@ -21,24 +29,25 @@ function groupByModule(docs: typeof allDocs) {
 const groupedDocs = groupByModule(allDocs);
 const currentSlug = Astro.params.slug;
 
-// Mapeamento de Ícones por Pasta (usando nomes do Icon.astro)
-const iconMap: Record<string, string> = {
-  '00-historia': 'book-open',
-  '00-História': 'book-open',
-  '01-fundamentos': 'book-open',
-  '02-linguagem-c': 'code',
-  '03-hardware': 'cpu',
-  '04-sensores': 'activity',
-  'default': 'git-branch'
-};
+// Mapeamento de Ícones por Título do Módulo (Simples busca de palavra chave)
+function getIconForModule(moduleTitle: string) {
+    const lower = moduleTitle.toLowerCase();
+    if (lower.includes('história') || lower.includes('fundamentos')) return 'book-open';
+    if (lower.includes('linguagem') || lower.includes('sintaxe')) return 'code';
+    if (lower.includes('hardware') || lower.includes('memória') || lower.includes('mcus')) return 'cpu';
+    if (lower.includes('git')) return 'git-branch';
+    if (lower.includes('segurança')) return 'shield';
+    if (lower.includes('ferramentas')) return 'terminal';
+    return 'folder';
+}
 
-// Formata o nome da pasta para título (Ex: "01-fundamentos" -> "Mod 01: Fundamentos")
+// Helper removido: formatTitle agora é desnecessário se usarmos o module title direto
 function formatTitle(folder: string) {
   const parts = folder.split('-');
   if (parts[0].match(/^\d+$/)) {
     return `Módulo ${parts[0]}: ${parts.slice(1).join(' ')}`;
   }
-  return folder;
+  return folder.charAt(0).toUpperCase() + folder.slice(1);
 }
 ---
 
@@ -47,13 +56,13 @@ function formatTitle(folder: string) {
 
   <nav class="nav-scroll" id="sidebar-nav">
 
-    {Object.entries(groupedDocs).sort().map(([folder, docs]) => {
-      const iconName = iconMap[folder] || iconMap.default;
+    {Object.entries(groupedDocs).sort((a, b) => a[0].localeCompare(b[0])).map(([moduleTitle, docs]) => {
       
       return (
         <div class="module-group">
           <div class="module-title">
-            <span class="module-name">{formatTitle(folder)}</span>
+            <Icon name={getIconForModule(moduleTitle)} size={14} />
+            <span class="module-name">{moduleTitle}</span>
           </div>
           
           <div class="module-links">
@@ -152,6 +161,7 @@ function formatTitle(folder: string) {
   .module-title {
     display: flex;
     align-items: center;
+    gap: 8px;
     padding: 0 16px;
     margin-bottom: 16px;
   }
