@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aprendac.online/sitemap-index.xml

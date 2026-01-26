@@ -1,30 +1,20 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import Base from '../layouts/Base.astro';
 import FloatingMenu from '../components/FloatingMenu.astro';
 import Icon from '../components/Icon.astro';
 import FileExplorer from '../components/playground/FileExplorer.astro';
 import OutputPanel from '../components/playground/OutputPanel.astro';
 ---
 
-<!doctype html>
-<html lang="pt-BR">
-	<head>
-		<meta charset="UTF-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<Base title="Playground | Aprenda C"></title>
-		<meta name="description" content="IDE online para compilar e executar código C em tempo real com suporte a múltiplos arquivos." />
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-		<ClientRouter />
-	</head>
-	<body>
-		<div class="playground-container">
-			<FloatingMenu />
-			
-			<!-- IDE Layout -->
-			<main class="ide-wrapper">
-				<!-- Toolbar -->
+<Base title="Playground C Interativo | Aprenda C" description="Compile e execute código C diretamente no navegador.">
+  <div class="playground-container">
+    <FloatingMenu />
+    
+    <!-- IDE Layout -->
+    <main class="ide-wrapper">
+      <!-- Toolbar -->
+
 				<div class="toolbar">
 					<div class="toolbar-left">
 						<div class="project-name">
@@ -164,6 +154,10 @@ import OutputPanel from '../components/playground/OutputPanel.astro';
       start();
   });
 </script>
+
+</main>
+</div>
+</Base>
 
 <style is:global>
 /* Premium Dark Theme Variables */
