@@ -22,6 +22,12 @@ FROM oven/bun:1.3-slim
 
 WORKDIR /app
 
+# Instalar dependências de sistema (Docker CLI + GCC)
+RUN apt-get update && \
+    apt-get install -y docker.io gcc build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
+
 # Copiar dependências e código do builder
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/frontend/node_modules ./frontend/node_modules
