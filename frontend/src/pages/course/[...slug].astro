@@ -7,12 +7,19 @@ export async function getStaticPaths() {
   const courseEntries = await getCollection('course');
   
   // Sort by Folder (Module) then by Lesson Order to ensure correct sequence
+  // Sort by Module Number (from frontmatter) then by Lesson Order
   const sortedEntries = courseEntries.sort((a, b) => {
-    const [folderA] = a.slug.split('/');
-    const [folderB] = b.slug.split('/');
+    // Helper to extract "Módulo 01" -> 1
+    const getModNum = (t?: string) => {
+        const m = t?.match(/Módulo (\d+)/);
+        return m ? parseInt(m[1], 10) : 999;
+    };
+
+    const modA = getModNum(a.data.module);
+    const modB = getModNum(b.data.module);
     
-    if (folderA !== folderB) {
-      return folderA.localeCompare(folderB);
+    if (modA !== modB) {
+      return modA - modB;
     }
     return a.data.order - b.data.order;
   });
