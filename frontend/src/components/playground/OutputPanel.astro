@@ -6,6 +6,11 @@ import Icon from '../Icon.astro';
   <div class="panel-header">
     <span class="panel-title">Output</span>
     <div class="panel-actions">
+      <button id="toggle-output-max" class="icon-btn-sm" title="Maximizar Output">
+        <span class="icon-maximize"><Icon name="maximize" size={14} /></span>
+        <span class="icon-minimize" style="display: none;"><Icon name="minimize" size={14} /></span>
+      </button>
+      <div style="width: 1px; height: 16px; background: var(--border-subtle); margin: 0 4px;"></div>
       <button id="clear-output-btn" class="btn-secondary btn-sm" title="Limpar Output">
         <Icon name="trash-2" size={14} />
         <span>Limpar</span>
@@ -59,8 +64,22 @@ import Icon from '../Icon.astro';
     padding: 0 16px;
     background: var(--bg-panel);
     border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
     flex-shrink: 0;
   }
+
+  .panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .icon-btn-sm {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; border-radius: 4px;
+    color: var(--text-muted); cursor: pointer; transition: 0.2s;
+  }
+  .icon-btn-sm:hover { color: var(--text-primary); background: var(--bg-subtle); }
 
   .panel-title {
     font-size: 11px;
@@ -174,5 +193,49 @@ import Icon from '../Icon.astro';
   }
 
   .btn-sm { height: 24px; padding: 0 8px; font-size: 11px; }
+
+  /* Dynamic Output Styles */
+  :global(.output-section) {
+    margin-bottom: 16px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.02);
+  }
+
+  :global(.output-section.error) {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  :global(.output-section.success) {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  :global(.output-section.info) {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  :global(.section-header) {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  :global(.output-section.error .section-header) { color: #fca5a5; }
+  :global(.output-section.success .section-header) { color: #6ee7b7; }
+
+  :global(.output-section pre) {
+    margin: 0;
+    padding: 12px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+  }
 
 </style>

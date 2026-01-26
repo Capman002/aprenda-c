@@ -139,4 +139,10 @@ export class MonacoAdapter implements ICodeEditor {
   get monaco() {
     return this.monacoObj;
   } // Escape hatch if needed
+
+  updateOptions(options: any) {
+    if (this.editor) {
+      this.editor.updateOptions(options);
+    }
+  }
 }

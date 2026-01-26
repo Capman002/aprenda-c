@@ -66,6 +66,7 @@ export class PlaygroundController {
 
     // Load State
     this.loadState();
+    this.loadConfig();
 
     // Initial Render
     this.renderUI();
@@ -75,11 +76,160 @@ export class PlaygroundController {
 
     // Check API
     this.checkRuntime();
+
+    // Init Resizer
+    this.setupResizer();
+  }
+
+  // Config State
+  private config = {
+    fontSize: 14,
+    wordWrap: false,
+    minimap: false,
+  };
+
+  private setupResizer() {
+    const resizer = document.getElementById("resizer");
+    const outputPanel = document.querySelector(".output-panel") as HTMLElement;
+
+    if (!resizer || !outputPanel) return;
+
+    let isResizing = false;
+    let initialX = 0;
+    let initialWidth = 0;
+
+    const startResize = (e: MouseEvent) => {
+      isResizing = true;
+      initialX = e.clientX;
+      initialWidth = outputPanel.offsetWidth; // Get current px width
+
+      // Visual feedback
+      resizer.classList.add("resizing");
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+
+      document.addEventListener("mousemove", resize);
+      document.addEventListener("mouseup", stopResize);
+    };
+
+    const resize = (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      const deltaX = e.clientX - initialX;
+      // Moving right (positive delta) decreases width (since panel is on right)
+      // Moving left (negative delta) increases width
+      const newWidth = initialWidth - deltaX;
+
+      // Constraints (min 0 to collapse, max 80vw)
+      if (newWidth < 50) {
+        // Collapse mode
+        outputPanel.style.width = "0px";
+        outputPanel.style.minWidth = "0px";
+        outputPanel.style.flexBasis = "0px";
+        outputPanel.style.padding = "0"; // Hide padding if any
+        outputPanel.style.overflow = "hidden";
+      } else {
+        outputPanel.style.width = `${newWidth}px`;
+        outputPanel.style.flexBasis = `${newWidth}px`; // Override flex
+        outputPanel.style.minWidth = "250px"; // Restore min-width when not collapsed
+        outputPanel.style.padding = ""; // Restore padding
+        outputPanel.style.overflow = "";
+      }
+
+      // Important: Tell Monaco to resize
+      this.editor.layout();
+    };
+
+    const stopResize = () => {
+      isResizing = false;
+      resizer.classList.remove("resizing");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+
+      document.removeEventListener("mousemove", resize);
+      document.removeEventListener("mouseup", stopResize);
+    };
+
+    // Double click to toggle
+    resizer.addEventListener("dblclick", () => {
+      const currentWidth = outputPanel.offsetWidth;
+      if (currentWidth > 50) {
+        // Collapse
+        outputPanel.dataset.prevWidth = currentWidth.toString();
+        outputPanel.style.width = "0px";
+        outputPanel.style.flexBasis = "0px";
+        outputPanel.style.minWidth = "0px";
+        outputPanel.style.overflow = "hidden";
+      } else {
+        // Restore
+        const prev = outputPanel.dataset.prevWidth || "400";
+        outputPanel.style.width = `${prev}px`;
+        outputPanel.style.flexBasis = `${prev}px`;
+        outputPanel.style.minWidth = "250px";
+        outputPanel.style.overflow = "";
+      }
+      this.editor.layout();
+    });
+
+    resizer.addEventListener("mousedown", startResize);
   }
 
   private bindEvents() {
     // Toolbar
     this.ui.runBtn?.addEventListener("click", () => this.runCode());
+
+    // Settings
+    const settingsBtn = document.getElementById("settings-btn");
+    const settingsPopover = document.getElementById("settings-popover");
+    const closeSettings = document.getElementById("close-settings");
+
+    settingsBtn?.addEventListener("click", () => {
+      // Toggle Popover
+      if (settingsPopover) {
+        settingsPopover.style.display =
+          settingsPopover.style.display === "none" ? "block" : "none";
+      }
+    });
+
+    closeSettings?.addEventListener("click", () => {
+      if (settingsPopover) settingsPopover.style.display = "none";
+    });
+
+    // Font Size
+    document.getElementById("font-inc")?.addEventListener("click", () => {
+      this.updateConfig({ fontSize: this.config.fontSize + 1 });
+    });
+    document.getElementById("font-dec")?.addEventListener("click", () => {
+      this.updateConfig({ fontSize: Math.max(10, this.config.fontSize - 1) });
+    });
+
+    // Toggles
+    document
+      .getElementById("toggle-wordwrap")
+      ?.addEventListener("change", (e) => {
+        this.updateConfig({ wordWrap: (e.target as HTMLInputElement).checked });
+      });
+    document
+      .getElementById("toggle-minimap")
+      ?.addEventListener("change", (e) => {
+        this.updateConfig({ minimap: (e.target as HTMLInputElement).checked });
+      });
+
+    // Close settings when clicking outside (simple version)
+    document.addEventListener("click", (e) => {
+      if (
+        settingsPopover &&
+        settingsBtn &&
+        settingsPopover.style.display === "block"
+      ) {
+        if (
+          !settingsPopover.contains(e.target as Node) &&
+          !settingsBtn.contains(e.target as Node)
+        ) {
+          settingsPopover.style.display = "none";
+        }
+      }
+    });
 
     // Output Actions
     document
@@ -106,6 +256,140 @@ export class PlaygroundController {
         if (template) this.loadTemplate(template);
       });
     });
+
+    // Fullscreen Toggle (Toolbar)
+    document
+      .getElementById("toggle-fullscreen")
+      ?.addEventListener("click", () => {
+        this.toggleFullscreen();
+      });
+    // Editor Maximize Toggle (Button next to Run)
+    document.getElementById("expand-btn")?.addEventListener("click", () => {
+      this.toggleEditorMaximize();
+    });
+
+    // Output Maximize Toggle
+    document
+      .getElementById("toggle-output-max")
+      ?.addEventListener("click", () => {
+        this.toggleOutputMaximize();
+      });
+  }
+
+  private toggleFullscreen() {
+    const wrapper = document.querySelector(".ide-wrapper");
+    if (!wrapper) return;
+
+    const isFullscreen = wrapper.classList.toggle("fullscreen-mode");
+
+    // Update Icon for Fullscreen button only
+    this.updateIconState("toggle-fullscreen", isFullscreen);
+
+    this.layoutEditor();
+  }
+
+  private toggleEditorMaximize() {
+    const main = document.querySelector(".ide-main");
+    if (!main) return;
+
+    // Reset output maximize if active
+    if (main.classList.contains("output-maximized")) {
+      main.classList.remove("output-maximized");
+      this.updateIconState("toggle-output-max", false);
+    }
+
+    const isMaximized = main.classList.toggle("editor-maximized");
+
+    // Update Icon for Expand button only
+    this.updateIconState("expand-btn", isMaximized);
+
+    this.layoutEditor();
+  }
+
+  private toggleOutputMaximize() {
+    const main = document.querySelector(".ide-main");
+    if (!main) return;
+
+    // Reset editor maximize if active
+    if (main.classList.contains("editor-maximized")) {
+      main.classList.remove("editor-maximized");
+      this.updateIconState("expand-btn", false);
+    }
+
+    const isMaximized = main.classList.toggle("output-maximized");
+
+    // Update Icon
+    this.updateIconState("toggle-output-max", isMaximized);
+
+    this.layoutEditor();
+  }
+
+  private layoutEditor() {
+    // Notify Monaco to resize after transition
+    setTimeout(() => {
+      this.editor.layout();
+    }, 350);
+  }
+
+  private updateIconState(btnId: string, isActive: boolean) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+
+    const max = btn.querySelector(".icon-maximize") as HTMLElement;
+    const min = btn.querySelector(".icon-minimize") as HTMLElement;
+
+    if (max) max.style.display = isActive ? "none" : "";
+    if (min) min.style.display = isActive ? "" : "none";
+  }
+
+  private updateConfig(newConfig: Partial<typeof this.config>) {
+    this.config = { ...this.config, ...newConfig };
+    this.applyConfig();
+    this.saveConfig();
+    this.renderConfigUI();
+  }
+
+  private applyConfig() {
+    this.editor.updateOptions({
+      fontSize: this.config.fontSize,
+      wordWrap: this.config.wordWrap ? "on" : "off",
+      minimap: { enabled: this.config.minimap },
+    });
+  }
+
+  private renderConfigUI() {
+    const display = document.getElementById("font-display");
+    if (display) display.textContent = `${this.config.fontSize}px`;
+
+    const wrapToggle = document.getElementById(
+      "toggle-wordwrap",
+    ) as HTMLInputElement;
+    if (wrapToggle) wrapToggle.checked = this.config.wordWrap;
+
+    const mapToggle = document.getElementById(
+      "toggle-minimap",
+    ) as HTMLInputElement;
+    if (mapToggle) mapToggle.checked = this.config.minimap;
+  }
+
+  private saveConfig() {
+    localStorage.setItem("playground-config", JSON.stringify(this.config));
+  }
+
+  private loadConfig() {
+    const saved = localStorage.getItem("playground-config");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        this.config = { ...this.config, ...parsed };
+      } catch (e) {
+        console.warn("Invalid config saved");
+      }
+    }
+    // Apply initial config
+    this.renderConfigUI();
+    // setTimeout to ensure editor is ready or apply immediately if editor exists
+    setTimeout(() => this.applyConfig(), 100);
   }
 
   // --- Core Logic ---
@@ -235,7 +519,12 @@ export class PlaygroundController {
       html += `
                 <div class="tab ${isActive}" data-filename="${name}">
                    <span>${name}</span>
-                   <button class="tab-close">×</button>
+                   <button class="tab-close" title="Fechar">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                   </button>
                 </div>
             `;
     });

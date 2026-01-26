@@ -33,6 +33,11 @@ import { SITE } from '../site.config';
 							<span class="status-dot"></span>
 							<span class="status-text">Pronto</span>
 						</div>
+            <div style="width: 1px; height: 16px; background: var(--border-subtle); margin: 0 8px;"></div>
+            <button id="toggle-fullscreen" class="icon-btn-sm" title="Tela Cheia">
+              <span class="icon-maximize"><Icon name="maximize" size={14} /></span>
+              <span class="icon-minimize" style="display: none;"><Icon name="minimize" size={14} /></span>
+            </button>
 					</div>
 				</div>
 				
@@ -80,14 +85,45 @@ import { SITE } from '../site.config';
 				<!-- Footer -->
 				<div class="ide-footer">
 					<div class="footer-left">
-						<span class="footer-item" id="runtime-info">
-							<Icon name="settings" size={12} />
-							Verificando runtime...
-						</span>
-						<span class="footer-item">
-							<Icon name="globe" size={12} />
-							Docker API
-						</span>
+            <div class="settings-wrapper" style="position: relative;">
+              <button id="settings-btn" class="footer-btn" title="Configurações">
+                <Icon name="settings" size={12} />
+                <span>Config</span>
+              </button>
+              
+              <!-- Settings Popover -->
+              <div id="settings-popover" class="settings-popover" style="display: none;">
+                <div class="settings-header">
+                  <span>Editor</span>
+                  <button id="close-settings" class="close-icon"><Icon name="x" size={12}/></button>
+                </div>
+                
+                <div class="setting-item">
+                  <label>Tamanho da Fonte</label>
+                  <div class="setting-control zoom-control">
+                    <button id="font-dec" class="zoom-btn">-</button>
+                    <span id="font-display">14px</span>
+                    <button id="font-inc" class="zoom-btn">+</button>
+                  </div>
+                </div>
+
+                <div class="setting-item">
+                  <label>Quebra de Linha</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-wordwrap">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                
+                <div class="setting-item">
+                  <label>Minimap</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-minimap">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
 					</div>
 					<div class="footer-right">
 						<button id="toggle-stdin" class="footer-btn">
@@ -197,11 +233,13 @@ import { SITE } from '../site.config';
 
 .playground-container * { box-sizing: border-box; }
 
+
 /* .playground-container styles merged above */
 .playground-container {
   display: flex;
   flex-direction: column;
   padding-top: 80px; 
+  width: 100%; /* Fix: Ensure it fills the full width */
 }
 
 .ide-wrapper {
@@ -214,6 +252,41 @@ import { SITE } from '../site.config';
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 20px 40px -10px rgba(0,0,0,0.5);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); /* Smooth transition */
+}
+
+/* Fullscreen Mode */
+:global(.ide-wrapper.fullscreen-mode) {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  z-index: 2000;
+  width: 100vw;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Editor Maximize Mode */
+:global(.ide-main.editor-maximized .file-explorer),
+:global(.ide-main.editor-maximized .output-panel),
+:global(.ide-main.editor-maximized .resizer) {
+  display: none !important;
+}
+
+/* Output Maximize Mode */
+:global(.ide-main.output-maximized .file-explorer),
+:global(.ide-main.output-maximized .editor-area),
+:global(.ide-main.output-maximized .resizer) {
+  display: none !important;
+}
+
+:global(.ide-main.output-maximized .output-panel) {
+  flex: 1 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-left: none;
 }
 
 /* Toolbar */
@@ -225,6 +298,11 @@ import { SITE } from '../site.config';
   padding: 0 20px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
 }
 
 .project-name {
@@ -280,21 +358,112 @@ import { SITE } from '../site.config';
 
 /* Tabs */
 .editor-tabs { flex: 1; display: flex; overflow-x: auto; gap: 1px; }
-.tab {
+
+:global(.tab) {
   position: relative; display: flex; align-items: center; gap: 8px;
-  min-width: 120px; max-width: 200px; padding: 0 16px;
+  min-width: 120px; max-width: 200px; padding: 0 12px 0 16px; /* Adjusted padding for close btn */
   background: transparent; color: var(--text-secondary);
   font-size: 13px; cursor: pointer; border-right: 1px solid var(--border-subtle);
+  user-select: none;
 }
-.tab:hover { background: var(--bg-subtle); color: var(--text-primary); }
-.tab.active { background: var(--bg-panel); color: var(--text-primary); border-top: 2px solid var(--accent); }
-.tab-close { margin-left: auto; opacity: 0; background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
-.tab:hover .tab-close { opacity: 0.5; }
-.tab-close:hover { opacity: 1 !important; color: var(--text-primary); }
+:global(.tab:hover) { background: var(--bg-subtle); color: var(--text-primary); }
+:global(.tab.active) { background: var(--bg-panel); color: var(--text-primary); border-top: 2px solid var(--accent); }
+
+:global(.tab-close) { 
+  margin-left: auto; opacity: 0; 
+  background: transparent; border: none; 
+  color: var(--text-muted); cursor: pointer; 
+  display: flex !important; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 3px;
+  padding: 0; /* Important reset */
+}
+:global(.tab:hover .tab-close) { opacity: 1; }
+:global(.tab-close:hover) { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 
 /* Resizer */
 .resizer { width: 4px; background: var(--bg-app); cursor: col-resize; border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle); transition: background 0.2s; z-index: 10; }
 .resizer:hover { background: var(--accent); }
+
+/* Settings Popover */
+.settings-popover {
+  position: absolute;
+  bottom: 36px;
+  left: 0;
+  width: 220px;
+  background: #18181b; /* Zinc 900 */
+  border: 1px solid var(--border-prominent);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  padding: 8px 0;
+  z-index: 1000;
+  animation: slide-up 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 16px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 8px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);
+}
+
+.close-icon {
+  background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; display: flex;
+}
+.close-icon:hover { color: var(--text-primary); }
+
+.setting-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 16px;
+  font-size: 13px; color: var(--text-secondary);
+}
+
+.zoom-control {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-subtle);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.zoom-btn {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none;
+  color: var(--text-secondary); cursor: pointer;
+  border-radius: 2px;
+}
+.zoom-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+
+#font-display {
+  font-variant-numeric: tabular-nums;
+  min-width: 24px; text-align: center; font-size: 12px;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative; width: 32px; height: 18px;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background-color: var(--bg-subtle);
+  transition: .4s; border-radius: 34px;
+  border: 1px solid var(--border-subtle);
+}
+.slider:before {
+  position: absolute; content: "";
+  height: 12px; width: 12px;
+  left: 2px; bottom: 2px;
+  background-color: var(--text-muted);
+  transition: .4s; border-radius: 50%;
+}
+input:checked + .slider { background-color: rgba(59, 130, 246, 0.2); border-color: var(--accent); }
+input:checked + .slider:before { transform: translateX(14px); background-color: var(--accent); }
 
 /* Footer */
 .ide-footer {
@@ -309,7 +478,7 @@ import { SITE } from '../site.config';
 
 /* Modal */
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
-.modal-content { width: 400px; background: var(--bg-panel); border: 1px solid var(--border-proiminent); border-radius: var(--radius-lg); padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+.modal-content { width: 400px; background: var(--bg-panel); border: 1px solid var(--border-prominent); border-radius: var(--radius-lg); padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
 .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
 .modal-header h3 { font-size: 16px; font-weight: 600; }
 .modal-close { background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
