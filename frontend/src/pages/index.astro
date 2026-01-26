@@ -2,14 +2,18 @@
 import { ClientRouter } from 'astro:transitions';
 import FloatingMenu from '../components/FloatingMenu.astro';
 import Icon from '../components/Icon.astro';
+import Base from '../layouts/Base.astro';
+import { SITE } from '../site.config';
 ---
 
 <!doctype html>
 <html lang="pt-BR">
 	<head>
+        <!-- Nota: index.astro não usa Base Layout mas deveria. 
+             Como tem head manual, vou manter mas atualizar os dados -->
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<title>Aprenda C | Curso de Programação C e Sistemas</title>
+		<title>{SITE.title}</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

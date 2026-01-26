@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import SmartSidebar from '../components/SmartSidebar.astro';
 import FloatingMenu from '../components/FloatingMenu.astro';
 import Icon from '../components/Icon.astro';
+import { SITE } from '../site.config';
 
 const { frontmatter, prev, next, headings = [] } = Astro.props;
 
@@ -17,7 +18,7 @@ const tocHeadings = headings.filter((h: any) => h.depth > 1 && h.depth <= 3);
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{frontmatter.title} | Robotics CS</title>
+		<title>{frontmatter.title} | {SITE.name}</title>
 		<!-- Fonte Inter para UI e JetBrains Mono para código -->
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -101,13 +102,13 @@ const tocHeadings = headings.filter((h: any) => h.depth > 1 && h.depth <= 3);
 								<h3 class="toc-title">Autor</h3>
 								<div class="sidebar-profile-card">
 									<div class="sidebar-avatar">
-										<img src="/Emanuel-Nunes.webp" alt="Emanuel Nunes" />
+										<img src="/Emanuel-Nunes.webp" alt={SITE.author} />
 									</div>
 									<div class="sidebar-author-info">
-										<h4 class="sidebar-author-name">Emanuel Nunes</h4>
+										<h4 class="sidebar-author-name">{SITE.author}</h4>
 										<p class="sidebar-author-bio">Arquiteto de Soluções.</p>
 										<div class="sidebar-social text-sm">
-											<a href="https://github.com/Capman002" target="_blank" aria-label="GitHub">
+											<a href={SITE.github} target="_blank" aria-label="GitHub">
 												<Icon name="github" size={14} />
 											</a>
 											<a href="https://www.linkedin.com/in/emanuel-nunes002/" target="_blank" aria-label="LinkedIn">

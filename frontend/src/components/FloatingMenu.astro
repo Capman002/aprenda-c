@@ -1,26 +1,41 @@
 ---
 import Icon from './Icon.astro';
+import { SITE, NAVIGATION } from '../site.config';
 
 const pathname = Astro.url.pathname;
 const isActive = (path: string) => {
   if (path === '/') return pathname === '/';
-  return pathname.startsWith(path);
+  if (path.length > 1 && pathname.startsWith(path)) return true;
+  return false;
 };
 ---
 
 <nav class="floating-menu">
   <div class="menu-pill">
     <div class="links">
+        <!-- Home Link (Manual for Icon) -->
       <a href="/" class={`nav-link ${isActive('/') ? 'active' : ''}`} data-astro-prefetch>
         <Icon name="home" size={16} /> INÍCIO
       </a>
-      <a href="/course/01-contexto-historico/00-historia-programacao" class={`nav-link ${isActive('/course') ? 'active' : ''}`} data-astro-prefetch>
-        <Icon name="graduation-cap" size={16} /> CURSO
-      </a>
-      <a href="/playground" class={`nav-link ${isActive('/playground') ? 'active' : ''}`} data-astro-prefetch>
-        <Icon name="terminal" size={16} /> PLAYGROUND
-      </a>
-      <a href="https://github.com" target="_blank" class="nav-link">
+      
+      <!-- Dynamic Navigation -->
+      {NAVIGATION.map(item => {
+        // Skip GitHub as we treat it specially with icon or allow it if desired. 
+        // For now I'll check label to map icons manually or generic
+        let icon = "circle";
+        if (item.label === "Curso") icon = "graduation-cap";
+        if (item.label === "Playground") icon = "terminal";
+        if (item.label === "GitHub") return null; // Handle manually below
+
+        return (
+            <a href={item.href} class={`nav-link ${isActive(item.href) ? 'active' : ''}`} data-astro-prefetch>
+                <Icon name={icon} size={16} /> {item.label.toUpperCase()}
+            </a>
+        )
+      })}
+
+      <!-- External Links -->
+      <a href={SITE.github} target="_blank" class="nav-link">
         <Icon name="github" size={16} /> GITHUB
       </a>
     </div>

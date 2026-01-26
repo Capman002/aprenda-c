@@ -5,9 +5,10 @@ import FloatingMenu from '../components/FloatingMenu.astro';
 import Icon from '../components/Icon.astro';
 import FileExplorer from '../components/playground/FileExplorer.astro';
 import OutputPanel from '../components/playground/OutputPanel.astro';
+import { SITE } from '../site.config';
 ---
 
-<Base title="Playground C Interativo | Aprenda C" description="Compile e execute código C diretamente no navegador.">
+<Base title={`Playground C Interativo | ${SITE.name}`} description="Compile e execute código C diretamente no navegador.">
   <div class="playground-container">
     <FloatingMenu />
     

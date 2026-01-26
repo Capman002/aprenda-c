@@ -1,5 +1,6 @@
 ---
 import { SEO } from "astro-seo";
+import { SITE } from "../site.config";
 
 interface Props {
   title: string;
@@ -9,9 +10,24 @@ interface Props {
 
 const { 
   title, 
-  description = "Aprenda C do zero ao avançado - Plataforma completa com playground interativo, sistemas embarcados e modernas linguagens de sistemas.",
-  image = "/og-image.png"
+  description = SITE.description,
+  image = SITE.defaultImage
 } = Astro.props;
+
+const pageTitle = title === SITE.name ? title : `${title} | ${SITE.name}`;
+const canonicalURL = new URL(Astro.url.pathname, SITE.url);
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": SITE.name,
+  "url": SITE.url,
+  "description": SITE.description,
+  "author": {
+    "@type": "Person",
+    "name": SITE.author
+  }
+};
 ---
 
 <!doctype html>
@@ -22,35 +38,43 @@ const {
     
     <SEO
       title={title}
-      titleTemplate="%s | Aprenda C"
+      titleTemplate={`%s | ${SITE.name}`}
+      titleDefault={SITE.title}
       description={description}
+      canonical={canonicalURL.href}
       openGraph={{
         basic: {
           title: title,
           type: "website",
-          image: image,
-          url: Astro.url.href,
+          image: new URL(image, SITE.url).href,
+          url: canonicalURL.href,
         },
         optional: {
           locale: "pt_BR",
-          siteName: "Aprenda C",
+          siteName: SITE.name,
           description: description,
+        },
+        image: {
+            alt: SITE.defaultImageAlt,
         }
       }}
       twitter={{
         card: "summary_large_image",
-        site: "@capman002",
-        creator: "@capman002",
+        site: SITE.twitter,
+        creator: SITE.twitter,
       }}
       extend={{
         link: [{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
         meta: [
-          { name: "twitter:image", content: image },
-          { name: "theme-color", content: "#0d1117" },
+          { name: "twitter:image", content: new URL(image, SITE.url).href },
+          { name: "theme-color", content: "#09090b" },
           { name: "generator", content: Astro.generator }
         ],
       }}
     />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
