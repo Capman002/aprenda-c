@@ -57,7 +57,8 @@ const app = new Elysia()
       "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;";
   })
 
-  .get("/", () => ({
+  // Informações da API movidas para /api para liberar a raiz para o frontend
+  .get("/api", () => ({
     name: "Course API (Docker Runner)",
     version: "4.0.0",
     endpoints: {
