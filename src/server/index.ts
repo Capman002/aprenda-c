@@ -58,7 +58,7 @@ const app = new Elysia()
       "img-src 'self' data: https:; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://cdnjs.cloudflare.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
-      "font-src 'self' data: https://fonts.gstatic.com; " +
+      "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; " +
       "connect-src 'self' https: http://localhost:* ws://localhost:*; " +
       "worker-src 'self' blob:;";
   })
