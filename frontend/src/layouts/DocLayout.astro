@@ -4,11 +4,43 @@ import SmartSidebar from '../components/SmartSidebar.astro';
 import FloatingMenu from '../components/FloatingMenu.astro';
 import Icon from '../components/Icon.astro';
 import { SITE } from '../site.config';
+import { SEO } from "astro-seo";
 
 const { frontmatter, prev, next, headings = [] } = Astro.props;
 
 // Filter headings for TOC (H2 and H3 only)
 const tocHeadings = headings.filter((h: any) => h.depth > 1 && h.depth <= 3);
+
+const canonicalURL = new URL(Astro.url.pathname, SITE.url);
+const description = frontmatter.description || SITE.description;
+const image = frontmatter.image || SITE.defaultImage;
+
+// Schema.org para Artigo Técnico / Curso
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": frontmatter.title,
+  "description": description,
+  "image": new URL(image, SITE.url).href,
+  "author": {
+    "@type": "Person",
+    "name": SITE.author,
+    "url": SITE.github
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": SITE.name,
+    "logo": {
+      "@type": "ImageObject",
+      "url": new URL("/favicon.svg", SITE.url).href
+    }
+  },
+  "datePublished": frontmatter.pubDate || new Date().toISOString(),
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": canonicalURL.href
+  }
+};
 ---
 
 <!doctype html>
@@ -16,9 +48,46 @@ const tocHeadings = headings.filter((h: any) => h.depth > 1 && h.depth <= 3);
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>{frontmatter.title} | {SITE.name}</title>
+		
+    <SEO
+      title={frontmatter.title}
+      titleTemplate={`%s | ${SITE.name}`}
+      description={description}
+      canonical={canonicalURL.href}
+      openGraph={{
+        basic: {
+          title: frontmatter.title,
+          type: "article",
+          image: new URL(image, SITE.url).href,
+          url: canonicalURL.href,
+        },
+        optional: {
+          locale: "pt_BR",
+          siteName: SITE.name,
+          description: description,
+        },
+        image: {
+            alt: frontmatter.title,
+        }
+      }}
+      twitter={{
+        card: "summary_large_image",
+        site: SITE.twitter,
+        creator: SITE.twitter,
+      }}
+      extend={{
+        link: [{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
+        meta: [
+          { name: "twitter:image", content: new URL(image, SITE.url).href },
+          { name: "theme-color", content: "#09090b" },
+          { name: "generator", content: Astro.generator }
+        ],
+      }}
+    />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
 		<!-- Fonte Inter para UI e JetBrains Mono para código -->
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
