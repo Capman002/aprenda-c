@@ -1,0 +1,334 @@
+---
+title: "Vulnerabilidades Clássicas em C"
+description: "Os bugs que destruíram sistemas — e como não cometê-los."
+difficulty: "Avançado"
+duration: "25 min"
+tags: ["Segurança", "Buffer Overflow", "UAF", "Vulnerabilidades", "C"]
+order: 1
+---
+
+C te dá controle total sobre a memória. Isso significa que você pode cometer erros que em outras linguagens seriam impossíveis. Esses erros não causam apenas crashes — podem permitir que atacantes executem código malicioso.
+
+Conhecer essas vulnerabilidades é o primeiro passo para escrever código seguro.
+
+## Buffer Overflow
+
+O mais famoso e ainda mais comum. Ocorre quando você escreve além dos limites de um buffer.
+
+### Código Vulnerável
+
+```c
+char senha[8];
+printf("Digite a senha: ");
+gets(senha);  // Usuário digita 50 caracteres
+```
+
+O que acontece:
+
+1. `senha` tem 8 bytes alocados na stack
+2. Usuário digita 50 caracteres
+3. 42 bytes sobrescrevem memória adjacente (outras variáveis, return address)
+4. Atacante pode redirecionar execução para código malicioso
+
+### Código Corrigido
+
+```c
+char senha[8];
+printf("Digite a senha: ");
+if (fgets(senha, sizeof(senha), stdin) != NULL) {
+    senha[strcspn(senha, "\n")] = '\0';  // Remove newline
+}
+```
+
+### Stack Buffer Overflow
+
+```
+Stack antes:
+┌─────────────┐
+│ return addr │ ← Onde voltar após função
+├─────────────┤
+│ saved ebp   │
+├─────────────┤
+│ buffer[8]   │ ← Seu buffer
+└─────────────┘
+
+Após overflow de 50 bytes:
+┌─────────────┐
+│ XXXXXXXXXX  │ ← Return address sobrescrito!
+├─────────────┤
+│ XXXXXXXXXX  │
+├─────────────┤
+│ XXXXXXXXXX  │
+└─────────────┘
+```
+
+### Heap Buffer Overflow
+
+Similar, mas na heap. Pode corromper metadados de alocação:
+
+```c
+char *buf = malloc(10);
+strcpy(buf, "String muito grande que não cabe");  // Overflow
+```
+
+### Prevenção
+
+- Use funções com limite: `strncpy`, `snprintf`, `fgets`
+- Compile com `-fstack-protector-all`
+- Use AddressSanitizer: `gcc -fsanitize=address`
+- Valide tamanhos antes de copiar
+
+## Use-After-Free (UAF)
+
+Usar memória que já foi liberada.
+
+### Código Vulnerável
+
+```c
+struct Usuario *user = malloc(sizeof(struct Usuario));
+user->nome = "Alice";
+
+free(user);
+
+// Mais tarde, alguém esquece que user foi liberado...
+printf("Nome: %s\n", user->nome);  // UAF!
+```
+
+O que acontece:
+
+1. Memória é liberada
+2. Outro `malloc` pode reutilizar o mesmo espaço
+3. Acesso ao ponteiro antigo lê/escreve dados de outro objeto
+4. Atacante pode controlar o conteúdo
+
+### Código Corrigido
+
+```c
+struct Usuario *user = malloc(sizeof(struct Usuario));
+user->nome = "Alice";
+
+// Uso...
+
+free(user);
+user = NULL;  // Sempre anule após free
+
+// Verificação antes de usar
+if (user != NULL) {
+    printf("Nome: %s\n", user->nome);
+}
+```
+
+### Prevenção
+
+- Sempre `ptr = NULL` após `free(ptr)`
+- Use padrões de ownership claros (quem aloca, libera)
+- Ferramentas: Valgrind, ASan
+
+## Double Free
+
+Liberar a mesma memória duas vezes.
+
+### Código Vulnerável
+
+```c
+char *secret = malloc(100);
+// ... uso ...
+
+if (erro) {
+    free(secret);
+}
+
+// ... mais código ...
+
+free(secret);  // Double free se erro ocorreu!
+```
+
+O que acontece:
+
+1. Primeira `free` marca o bloco como disponível
+2. Segunda `free` corrompe estruturas internas do alocador
+3. Pode fazer `malloc` retornar o mesmo endereço para duas alocações
+4. Atacante pode sobrescrever dados de outro objeto
+
+### Código Corrigido
+
+```c
+char *secret = malloc(100);
+
+if (erro) {
+    free(secret);
+    secret = NULL;
+}
+
+// ... mais código ...
+
+if (secret != NULL) {
+    free(secret);
+    secret = NULL;
+}
+```
+
+### Prevenção
+
+- Sempre `ptr = NULL` após `free`
+- Use wrapper que verifica NULL
+
+```c
+void free_safe(void **ptr) {
+    if (ptr != NULL && *ptr != NULL) {
+        free(*ptr);
+        *ptr = NULL;
+    }
+}
+
+// Uso
+free_safe(&secret);
+```
+
+## Integer Overflow
+
+Aritmética que ultrapassa os limites do tipo.
+
+### Código Vulnerável
+
+```c
+size_t nmemb = 1000000000;
+size_t size = 1000;
+size_t total = nmemb * size;  // Overflow!
+
+char *buf = malloc(total);    // Aloca muito menos que esperado
+for (size_t i = 0; i < nmemb * size; i++) {
+    buf[i] = 'A';             // Buffer overflow
+}
+```
+
+O que acontece:
+
+1. `1000000000 * 1000` = 10^12, mas `size_t` de 32 bits máximo é ~4x10^9
+2. Resultado "dá a volta" para um valor pequeno
+3. `malloc` aloca buffer pequeno
+4. Loop escreve muito além
+
+### Código Corrigido
+
+```c
+// Verificar overflow antes da multiplicação
+size_t nmemb = 1000000000;
+size_t size = 1000;
+
+if (nmemb > 0 && size > SIZE_MAX / nmemb) {
+    // Overflow detectado!
+    return NULL;
+}
+
+size_t total = nmemb * size;
+char *buf = malloc(total);
+```
+
+Ou use `calloc`, que faz essa verificação internamente:
+
+```c
+// calloc(nmemb, size) verifica overflow
+char *buf = calloc(nmemb, size);
+if (buf == NULL) {
+    // Falha de alocação (pode ser overflow ou falta de memória)
+}
+```
+
+## Format String Attack
+
+Quando input do usuário é usado diretamente como format string.
+
+### Código Vulnerável
+
+```c
+char input[100];
+fgets(input, sizeof(input), stdin);
+printf(input);  // VULNERÁVEL!
+```
+
+Se usuário digitar `%s%s%s%s`, `printf` vai ler da stack, possivelmente vazando dados ou crashando.
+
+Se digitar `%n`, pode **escrever** na memória.
+
+### Código Corrigido
+
+```c
+char input[100];
+fgets(input, sizeof(input), stdin);
+printf("%s", input);  // Input é argumento, não formato
+```
+
+### Regra Absoluta
+
+Nunca passe input não-confiável como primeiro argumento de `printf`, `sprintf`, `syslog`, etc.
+
+## Ferramentas de Detecção
+
+### Em Tempo de Compilação
+
+```bash
+gcc -Wall -Wextra -Werror -fstack-protector-all programa.c
+```
+
+### AddressSanitizer (ASan)
+
+```bash
+gcc -fsanitize=address -g programa.c -o programa
+./programa
+```
+
+Detecta: buffer overflow, UAF, double free, memory leaks.
+
+### Valgrind
+
+```bash
+valgrind --leak-check=full --show-leak-kinds=all ./programa
+```
+
+Detecta erros de memória em tempo de execução.
+
+### Static Analysis
+
+```bash
+# Clang Static Analyzer
+scan-build gcc programa.c
+
+# Cppcheck
+cppcheck --enable=all programa.c
+```
+
+## Mitigações em Nível de Sistema
+
+| Mitigação      | O que Faz                          |
+| -------------- | ---------------------------------- |
+| ASLR           | Randomiza endereços de memória     |
+| Stack Canaries | Valor especial detecta sobrescrita |
+| NX/DEP         | Stack não-executável               |
+| PIE            | Código em posição independente     |
+| RELRO          | Protege tabela de relocação        |
+
+Compile com todas as proteções:
+
+```bash
+gcc -fPIE -pie -fstack-protector-strong -D_FORTIFY_SOURCE=2 \
+    -Wl,-z,relro,-z,now programa.c
+```
+
+## Resumo
+
+| Vulnerabilidade  | Causa                      | Prevenção                       |
+| ---------------- | -------------------------- | ------------------------------- |
+| Buffer Overflow  | Escrever além do limite    | Funções com limite, validação   |
+| Use-After-Free   | Usar ptr após free         | NULL após free, ownership claro |
+| Double Free      | Free duas vezes            | NULL após free, wrapper         |
+| Integer Overflow | Aritmética sem verificação | Verificar antes, usar calloc    |
+| Format String    | Input como formato         | Sempre usar "%s", input         |
+
+---
+
+**Referências:**
+
+- Seacord, R. C. (2013). _Secure Coding in C and C++_, 2nd Edition
+- CERT C Coding Standard: https://wiki.sei.cmu.edu/confluence/display/c
+- OWASP Secure Coding Practices

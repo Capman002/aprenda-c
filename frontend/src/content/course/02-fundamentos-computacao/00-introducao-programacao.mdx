@@ -1,0 +1,102 @@
+---
+title: "Introdução à Programação"
+description: "O que realmente significa programar — além de decorar comandos."
+difficulty: "Iniciante"
+duration: "10 min"
+tags: ["Lógica", "Algoritmos", "Pensamento Computacional"]
+order: 0
+---
+
+import YouTube from "../../../components/YouTube.astro";
+
+Programar não é digitar comandos que você decorou. É estruturar um raciocínio de forma que uma máquina consiga executá-lo. A sintaxe (as regras de escrita de cada linguagem) você aprende consultando documentação. A lógica é o que você leva para qualquer linguagem que aparecer na sua carreira.
+
+## O que é um Algoritmo
+
+Um **algoritmo** é uma sequência finita de passos bem definidos para resolver um problema ou completar uma tarefa.
+
+Não precisa envolver computadores. Uma receita de bolo é um algoritmo:
+
+1. Pré-aqueça o forno a 180°C
+2. Misture os ingredientes secos
+3. Adicione os líquidos
+4. Asse por 40 minutos
+
+O algoritmo funciona porque cada passo é claro e a ordem importa. Se você assar antes de misturar, o resultado não é um bolo.
+
+Na programação, algoritmos descrevem _como_ resolver algo de forma abstrata, independente da linguagem que você vai usar.
+
+## O que é um Programa
+
+Um **programa** é um algoritmo implementado em uma linguagem específica, pronto para ser executado por um computador.
+
+A diferença:
+
+- **Algoritmo**: "Some todos os números de uma lista e divida pela quantidade de elementos"
+- **Programa em C**:
+
+```c
+float media(int lista[], int n) {
+    int soma = 0;
+    for (int i = 0; i < n; i++) {
+        soma += lista[i];
+    }
+    return (float)soma / n;
+}
+```
+
+O algoritmo é a ideia. O programa é a tradução dessa ideia para uma linguagem que a máquina entende (após compilação).
+
+## Lógica vs Sintaxe
+
+Essa distinção é importante porque iniciantes frequentemente confundem as duas:
+
+| Lógica                                                 | Sintaxe                                                |
+| ------------------------------------------------------ | ------------------------------------------------------ |
+| _Como_ você resolve o problema                         | _Como_ você escreve a solução em determinada linguagem |
+| Independe da linguagem                                 | Específica de cada linguagem                           |
+| Erro de lógica = programa roda mas dá resultado errado | Erro de sintaxe = programa nem compila                 |
+
+**Exemplo de erro de lógica:**
+
+```c
+// Quero a média, mas dividi antes de somar tudo
+float media = soma / n;  // 'soma' ainda não está completa
+soma += lista[i];
+```
+
+O código compila, mas o resultado está errado.
+
+**Exemplo de erro de sintaxe:**
+
+```c
+float media = soma / n   // Faltou ponto e vírgula
+```
+
+O código nem compila.
+
+Se você entende lógica, trocar de linguagem é questão de aprender nova sintaxe. Se você só decorou sintaxe, cada linguagem nova parece começar do zero.
+
+## Por que Pensamento Computacional Importa
+
+**Pensamento computacional** é a habilidade de:
+
+1. **Decompor** problemas grandes em partes menores
+2. **Reconhecer padrões** entre problemas similares
+3. **Abstrair** detalhes irrelevantes
+4. **Projetar algoritmos** para resolver cada parte
+
+Isso não é exclusivo de programadores. Engenheiros, cientistas e qualquer pessoa que resolve problemas sistemáticos usa pensamento computacional.
+
+A diferença entre um programador iniciante e um experiente raramente é quantidade de linguagens que conhece. É a capacidade de olhar para um problema e quebrá-lo em partes que podem ser resolvidas passo a passo.
+
+Comandos você esquece e consulta documentação. Lógica você desenvolve com prática e carrega para sempre.
+
+<YouTube id="_7mJDIFYe0o" title="Introdução à Lógica de Programação" />
+
+---
+
+**Referências:**
+
+- Cormen, T. H. et al. (2009). _Introduction to Algorithms_. MIT Press
+- Wing, J. M. (2006). _Computational Thinking_. Communications of the ACM

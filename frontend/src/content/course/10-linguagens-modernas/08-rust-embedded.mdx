@@ -1,0 +1,65 @@
+---
+title: "Embedded Rust: A Camada de Abstração"
+description: "PACs, HALs e Boad Crates. Como o Rust organiza o acesso ao Hardware."
+difficulty: "Avançado"
+duration: "30 min"
+tags: ["Rust", "Embedded", "HAL", "PAC"]
+order: 5
+---
+
+No mundo Rust, não escrevemos registradores na mão (a menos que necessário). Usamos uma pirâmide de abstração.
+
+## 1. PAC (Peripheral Access Crate) - A Base
+
+Gerada automaticamente (via `svd2rust`) a partir do arquivo SVD do fabricante do chip.
+Dá acesso seguro aos registradores brutos.
+
+```rust
+// Acesso bruto (unsafe-ish feel, mas type safe)
+let dp = pac::Peripherals::take().unwrap();
+dp.GPIO.out_set.write(|w| w.pin5().set_bit());
+```
+
+É verboso, mas garante que você não escreva o bit errado no registrador errado.
+
+## 2. HAL (Hardware Abstraction Layer) - O Meio
+
+Implementa as traits do `embedded-hal`. Transforma registradores brutos em objetos de alto nível.
+
+```rust
+// Transformando um pino bruto em um Saída Push-Pull
+let mut led = gpioa.pa5.into_push_pull_output();
+
+// Agora 'led' tem métodos de alto nível
+led.set_high(); // Acende
+```
+
+O legal é o **Type State Programming**: Um pino configurado como Input não tem o método `.set_high()`. Se você tentar ligar um pino de entrada, o código **não compila**. Erro de hardware pego na compilação!
+
+## 3. Board Crate (BSP) - O Topo
+
+Configuração pronta para sua placa específica (Arduino Uno, STM32 Discovery, ESP32 DevKit).
+Já define quem é o LED, quem é o botão.
+
+## embedded-hal: O Driver Universal
+
+O poder real do Rust.
+Se eu escrevo um driver para um sensor (ex: MPU6050) usando as traits genéricas `I2c` do `embedded-hal`:
+
+- Esse driver funciona no ESP32.
+- Funciona no STM32.
+- Funciona no Raspberry Pi (Linux).
+- Funciona no nRF52.
+
+Sem mudar uma linha de código do driver. Apenas trocando a implementação da HAL que é passada para ele.
+
+```rust
+// Driver genérico
+pub struct Mpu6050<I2C> { i2c: I2C }
+
+impl<I2C, E> Mpu6050<I2C>
+where I2C: WriteRead<Error = E>
+{
+    pub fn new(i2c: I2C) -> Self { ... }
+}
+```

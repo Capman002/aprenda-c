@@ -1,0 +1,221 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import FloatingMenu from '../components/FloatingMenu.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<!doctype html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>Robotics CS | Masterclass</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+		<ClientRouter />
+	</head>
+	<body>
+        <div class="landing-page">
+            <FloatingMenu />
+			
+			<main class="hero-container">
+				<div class="hero-content">
+					<h1>Programação de Baixo Nível<br/>& Engenharia de Hardware</h1>
+					<p class="hero-desc">
+						Um mergulho técnico profundo para engenheiros que desejam dominar 
+						desde o silício até os algoritmos de controle.
+					</p>
+                    
+                    <div class="cta-group">
+                        <a href="/course/01-contexto-historico/00-historia-programacao" class="btn-primary">
+                            Iniciar Jornada <Icon name="arrow-right" size={16} />
+                        </a>
+                        <a href="/playground" class="btn-secondary">
+                            Playground
+                        </a>
+                    </div>
+				</div>
+
+                <div class="features-row">
+                    <div class="feature-item">
+                        <h3><Icon name="terminal" size={18} /> Hardcore C</h3>
+                        <p>Ponteiros e Memória.</p>
+                    </div>
+                    <div class="separator">/</div>
+                    <div class="feature-item">
+                        <h3><Icon name="cpu" size={18} /> Bare Metal</h3>
+                        <p>Controle direto.</p>
+                    </div>
+                    <div class="separator">/</div>
+                    <div class="feature-item">
+                        <h3><Icon name="book-open" size={18} /> Algoritmos</h3>
+                        <p>PID e Controle.</p>
+                    </div>
+                </div>
+			</main>
+		</div>
+	</body>
+</html>
+
+<style>
+/* Variáveis */
+:root {
+    --bg-app: #050505; /* Black Profundo */
+    --text-primary: #e4e4e7;
+    --border: #27272a;
+    --accent: #3b82f6;
+}
+
+body { margin: 0; background: var(--bg-app); font-family: 'Inter', sans-serif; color: var(--text-primary); height: 100vh; overflow: hidden; }
+* { box-sizing: border-box; }
+
+.landing-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 0%, #15151a 0%, #050505 60%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Fundo sutil de grid ou luz */
+.landing-page::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=');
+    mask-image: radial-gradient(circle at 50% 50%, black, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.hero-container {
+    padding: 0 24px;
+    z-index: 10; /* Aumentado para garantir */
+    position: relative; /* Essencial para z-index funcionar */
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 60px;
+    padding-top: 120px; /* Aumentado padding para descolar do menu */
+    width: 100%;
+}
+
+/* Hero Texto */
+h1 {
+    font-size: 4rem;
+    line-height: 1.1;
+    font-weight: 800;
+    margin: 0 0 24px 0;
+    letter-spacing: -0.04em;
+    background: linear-gradient(180deg, #fff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-desc {
+    font-size: 1.25rem;
+    color: #a1a1aa;
+    line-height: 1.6;
+    max-width: 580px;
+    margin: 0 auto 40px auto; /* Centralização explícita */
+}
+
+/* Botões */
+.cta-group { display: flex; gap: 16px; justify-content: center; }
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    color: #000;
+    padding: 12px 32px;
+    border-radius: 99px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    height: 48px; /* Altura explícita para alinhamento */
+}
+.btn-primary:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 0 20px rgba(255,255,255,0.3);
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 32px;
+    background: transparent;
+    color: #a1a1aa;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 99px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+    height: 48px; /* Altura explícita para igualar btn-primary */
+}
+.btn-secondary:hover { 
+    background: rgba(255,255,255,0.05); 
+    color: #fff;
+    border-color: rgba(255,255,255,0.2);
+}
+
+/* Features Minimalistas */
+.features-row {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Garante centralização */
+    gap: 32px; /* Espaço mais generoso */
+    padding: 24px 48px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    margin-top: 40px;
+}
+
+.feature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px; /* Largura mínima para evitar desalinhamento visual */
+}
+
+.feature-item h3 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #fff;
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.feature-item p {
+    margin: 0;
+    color: #71717a;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.separator {
+    color: #27272a;
+    font-weight: 300;
+    font-size: 1.5rem;
+    line-height: 1;
+    margin-top: -4px; /* Ajuste ótico fino para centralizar com o texto */
+    opacity: 0.5;
+}
+</style>

@@ -1,0 +1,95 @@
+---
+title: "Máquinas e Microcontroladores"
+description: "De mainframes a MCUs: como os computadores encolheram e se multiplicaram."
+difficulty: "Iniciante"
+duration: "12 min"
+tags: ["Hardware", "Microcontroladores", "Arduino", "ESP32", "STM32"]
+order: 2
+---
+
+import YouTube from "../../../components/YouTube.astro";
+
+Quando as pessoas imaginam "computador", geralmente pensam em laptops ou desktops. Mas a maioria dos computadores no mundo não tem tela nem teclado. Eles estão dentro de carros, eletrodomésticos, brinquedos, termostatos e praticamente qualquer dispositivo eletrônico.
+
+## A Jornada: Do Tamanho de uma Sala ao Tamanho de uma Unha
+
+### Mainframes (1950s-1960s)
+
+Os primeiros computadores ocupavam salas inteiras, pesavam toneladas e consumiam energia suficiente para aquecer um prédio. O IBM 704 (1954) era um exemplo típico: custava milhões de dólares e só grandes empresas ou governos podiam ter um.
+
+Esses **mainframes** usavam válvulas de vácuo (primeira geração) e depois transistores (segunda geração). Eram programados em batch — você entregava seu trabalho e esperava horas ou dias pelo resultado.
+
+### Minicomputadores e Microcomputadores (1970s)
+
+Com os **circuitos integrados** (terceira geração), os computadores encolheram. O PDP-11, onde Unix e C nasceram, era um "mini" — do tamanho de um armário, não de uma sala.
+
+Em 1971, a Intel lançou o **4004** — o primeiro microprocessador comercial. Quatro bits, 740kHz. Parece ridículo hoje, mas foi revolucionário: pela primeira vez, a CPU inteira cabia em um único chip.
+
+O 8080 (1974) e seus sucessores levaram aos primeiros computadores pessoais acessíveis. O conceito mudou: de "um computador por empresa" para "um computador por pessoa".
+
+### Microcontroladores: Computadores Dentro de Coisas (1980s em diante)
+
+Aqui entra uma distinção importante que muita gente confunde:
+
+| Característica | Microprocessador (MPU) | Microcontrolador (MCU) |
+|---------------|------------------------|------------------------|
+| **O que é** | Apenas a CPU | CPU + memória + periféricos, tudo em um chip |
+| **Precisa de** | RAM externa, ROM externa, chips de I/O | Nada. Funciona sozinho |
+| **Custo típico** | $50 - $500 | $0.50 - $10 |
+| **Consumo** | Watts | Miliwatts ou microwatts |
+| **Uso típico** | Computadores gerais | Tarefas dedicadas e embarcadas |
+
+Um **microcontrolador** é um computador completo em um único chip. Ele tem processador, memória RAM, memória Flash (para o programa), timers, conversores analógico-digital (ADC), pinos de entrada/saída (GPIO) — tudo integrado.
+
+O Intel 8051 (1980) foi um dos primeiros MCUs populares e sua arquitetura ainda influencia designs modernos.
+
+## Os MCUs que Você Vai Encontrar
+
+### Arduino (ATmega328)
+
+O Arduino não é um chip — é uma plataforma. O Arduino Uno, o mais comum, usa o **ATmega328**:
+- 8 bits, 16 MHz
+- 32 KB de Flash, 2 KB de RAM
+- 14 pinos digitais, 6 analógicos
+
+O Arduino popularizou microcontroladores para iniciantes porque abstraiu a complexidade. Você não precisa saber como configurar registradores de clock para piscar um LED. Mas essa abstração tem custo: menos controle e menor eficiência.
+
+### ESP32 (Espressif)
+
+A Espressif, empresa chinesa, mudou o jogo da IoT com chips ridiculamente baratos e capazes:
+- 32 bits, dual-core, até 240 MHz
+- Wi-Fi e Bluetooth integrados
+- 520 KB de RAM, 4-16 MB de Flash
+- Preço: ~$3-5
+
+O ESP32 é o chip que você encontra em lâmpadas inteligentes, tomadas smart e qualquer dispositivo IoT barato. Antes dele, adicionar Wi-Fi a um projeto custava caro.
+
+### STM32 (STMicroelectronics)
+
+Para aplicações profissionais, a família STM32 é referência:
+- ARM Cortex-M (de M0 até M7)
+- De 8 MHz básico até 480 MHz (STM32H7)
+- Periféricos avançados: CAN bus, Ethernet, USB OTG
+- Certificações industriais e automotivas
+
+STM32 é o que você encontra em equipamentos médicos, controle industrial, drones e sistemas automotivos onde confiabilidade é crítica.
+
+<YouTube id="bbT_a7n5D7U" title="Microcontroladores Explicados" />
+
+## Por que Isso Importa para Programadores
+
+Se você vai programar para hardware, precisa entender as restrições:
+
+1. **Memória limitada**: 2 KB de RAM significa que você não pode criar arrays gigantes nem usar abstrações pesadas
+2. **Tempo real**: Muitas aplicações precisam responder em microssegundos; garbage collection não é opção
+3. **Sem sistema operacional** (geralmente): Você programa "bare metal" ou usa um RTOS minimalista
+4. **Periféricos importam**: Saber configurar um timer ou um ADC é tão importante quanto saber escrever código
+
+C é a linguagem dominante nesse mundo justamente porque dá controle direto sobre memória e hardware sem overhead de runtime.
+
+---
+
+**Referências:**
+- Intel Corporation. *4004 Single Chip 4-Bit P-Channel Microprocessor* (1971)
+- Espressif Systems. *ESP32 Technical Reference Manual* (2016)
+- STMicroelectronics. *STM32 32-bit Arm Cortex MCUs*

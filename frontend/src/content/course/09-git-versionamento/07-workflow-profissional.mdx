@@ -1,0 +1,56 @@
+---
+title: "Git: O Fluxo de Trabalho Profissional"
+description: "Além do commit e push. Conventional Commits, Branches e Rebase."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Git", "Workflow", "CI/CD"]
+order: 1
+---
+
+Git não é backup. Git é uma máquina do tempo e ferramenta de colaboração.
+
+## Conventional Commits
+
+Logs como "fix", "wip" ou "mais alterações" são inúteis. Adote o padrão:
+
+- `feat: adiciona suporte a sensor DHT22`
+- `fix: corrige overflow no cálculo de média`
+- `docs: atualiza diagrama de pinos`
+- `refactor: move lógica de wifi para arquivo separado`
+
+Isso permite gerar Changelogs automáticos.
+
+## Branches e Merge vs Rebase
+
+### Feature Branch Workflow
+
+Nunca commite na `main`. Crie uma branch para cada tarefa:
+`git checkout -b feat/mqtt-implementation`
+
+### Rebase: Mantendo a história limpa
+
+O `merge` cria um "commit de merge" que polui o histórico.
+Sempre que possível, ao trazer mudanças da main para sua branch, use **Rebase**.
+
+`git pull --rebase origin main`
+
+Isso pega seus commits e os aplica _em cima_ da main atualizada, como se você tivesse começado a trabalhar agora. O histórico fica linear.
+
+## Tags e Versionamento Semântico (SemVer)
+
+Para releases, use Tags.
+`git tag -a v1.0.0 -m "Release Produção"`
+
+Siga o formato `MAJOR.MINOR.PATCH`:
+
+- **MAJOR:** Quebra compatibilidade (API mudou).
+- **MINOR:** Nova feature (retrocompatível).
+- **PATCH:** Correção de bugs.
+
+## Code Review (Pull/Merge Requests)
+
+O código só entra na main via Pull Request (PR). É o momento de:
+
+1.  Rodar a CI (integração contínua) automática.
+2.  Humanos revisarem lógica e estilo.
+3.  Garantir que nenhum `// TODO` ou `printf` de debug passou.

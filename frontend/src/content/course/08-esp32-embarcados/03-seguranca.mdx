@@ -1,0 +1,266 @@
+---
+title: "Segurança em Sistemas Embarcados"
+description: "Secure boot, flash encryption e proteção de firmware no ESP32."
+difficulty: "Avançado"
+duration: "22 min"
+tags: ["Segurança", "Secure Boot", "Encryption", "ESP32", "OTA"]
+order: 3
+---
+
+Um ESP32 conectado à internet é um alvo. Sem proteção adequada, atacantes podem:
+
+- Extrair seu firmware e cloná-lo
+- Modificar o código para adicionar backdoors
+- Roubar credenciais WiFi e APIs
+- Transformar seu dispositivo em parte de uma botnet
+
+Este capítulo cobre as proteções disponíveis no ESP32 e como implementá-las.
+
+## O Modelo de Ameaça
+
+### Ataques Físicos
+
+- Extrair flash externa e ler conteúdo
+- Conectar debugger JTAG
+- Analisar firmware com ferramentas de RE
+
+### Ataques Remotos
+
+- Explorar vulnerabilidades no código
+- Man-in-the-middle em atualizações OTA
+- Injetar firmware malicioso
+
+### O que Proteger
+
+- Código fonte (IP)
+- Credenciais (WiFi, API keys, certificados)
+- Integridade do firmware (não modificado)
+- Comunicações (TLS)
+
+## Secure Boot
+
+**Secure Boot** garante que apenas firmware assinado por você possa rodar no dispositivo.
+
+### Como Funciona
+
+1. Você gera um par de chaves RSA (pública/privada)
+2. A chave pública é gravada no eFuse (one-time programmable)
+3. Seu firmware é assinado com a chave privada
+4. Na inicialização, o bootloader verifica a assinatura
+
+Se a assinatura não bater, o ESP32 não executa o firmware.
+
+### Habilitando
+
+```bash
+idf.py menuconfig
+# Security features -> Enable hardware Secure Boot
+# Escolha: Secure Boot V2 (recomendado para ESP32-S2/S3/C3)
+```
+
+### Gerando Chaves
+
+```bash
+# Gera chave privada (NUNCA compartilhe ou perca!)
+espsecure.py generate_signing_key secure_boot_signing_key.pem
+
+# Extrai chave pública
+espsecure.py extract_public_key --keyfile secure_boot_signing_key.pem public_key.pem
+```
+
+### Assinando Firmware
+
+```bash
+# Assina o binário
+espsecure.py sign_data --keyfile secure_boot_signing_key.pem \
+    --output firmware-signed.bin firmware.bin
+```
+
+### Considerações
+
+⚠️ **Irreversível**: Uma vez gravada a chave no eFuse, não pode ser alterada  
+⚠️ **Backup**: Perca a chave privada = dispositivos viram tijolo  
+⚠️ **Desenvolvimento**: Use chave de desenvolvimento separada da produção
+
+## Flash Encryption
+
+**Flash Encryption** criptografa o conteúdo da flash com AES-256. Mesmo que alguém extraia fisicamente o chip de flash, não consegue ler o conteúdo.
+
+### O que é Criptografado
+
+- Bootloader
+- Tabela de partições
+- Aplicação
+- Partições OTA
+- Partições marcadas como "encrypted"
+
+### Habilitando
+
+```bash
+idf.py menuconfig
+# Security features -> Enable flash encryption on boot
+```
+
+### Modos
+
+| Modo        | Descrição                                          |
+| ----------- | -------------------------------------------------- |
+| Development | Permite reflash. Limite de 3 flashes em plaintext. |
+| Release     | Não permite reflash em plaintext. Produção.        |
+
+### Como Funciona
+
+1. Na primeira inicialização, ESP32 gera chave AES aleatória
+2. Chave é armazenada em eFuse (protegida)
+3. Bootloader criptografa toda a flash
+4. Leituras subsequentes são descriptografadas em hardware
+
+### eFuse FLASH_CRYPT_CNT
+
+Este eFuse controla o estado da criptografia:
+
+- **Par**: bootloader pode criptografar (plaintext upload OK)
+- **Ímpar**: bootloader não criptografa (precisa upload criptografado)
+- Máximo: 3 uploads plaintext antes de ser obrigatório criptografar
+
+### Flashing com Encryption
+
+```bash
+# Primeira vez (plaintext, será criptografado no boot)
+idf.py -p COM3 flash
+
+# Após ativação, precisa criptografar antes de flashar
+espsecure.py encrypt_flash_data --keyfile flash_key.bin \
+    --address 0x10000 --output app-encrypted.bin app.bin
+
+idf.py -p COM3 write_flash 0x10000 app-encrypted.bin
+```
+
+## OTA Segura
+
+Atualizações Over-The-Air precisam ser seguras:
+
+### Requisitos
+
+1. **HTTPS**: Sempre use TLS para download
+2. **Verificação de assinatura**: Firmware deve ser assinado
+3. **Rollback**: Capacidade de voltar versão se falhar
+4. **Verificação de versão**: Não aceitar downgrade
+
+### Implementação
+
+```c
+#include "esp_https_ota.h"
+
+esp_err_t perform_ota(const char *url) {
+    esp_http_client_config_t config = {
+        .url = url,
+        .cert_pem = server_cert_pem,  // Certificado do servidor
+    };
+
+    esp_https_ota_config_t ota_config = {
+        .http_config = &config,
+    };
+
+    esp_err_t ret = esp_https_ota(&ota_config);
+
+    if (ret == ESP_OK) {
+        esp_restart();
+    }
+
+    return ret;
+}
+```
+
+### Anti-Rollback
+
+```bash
+idf.py menuconfig
+# Bootloader config -> Enable app rollback support
+# Security features -> Enable anti-rollback
+```
+
+O eFuse armazena a versão mínima. Firmware com versão menor é rejeitado.
+
+## NVS Encryption
+
+Non-Volatile Storage (NVS) guarda configurações. Por padrão, não é criptografado.
+
+```bash
+idf.py menuconfig
+# Component config -> NVS -> Enable NVS encryption
+```
+
+```c
+#include "nvs_flash.h"
+
+// Inicializa NVS com encryption
+esp_err_t err = nvs_flash_init();
+if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    err = nvs_flash_init();
+}
+```
+
+## Proteções Adicionais
+
+### Desabilitar JTAG
+
+```bash
+idf.py menuconfig
+# Security features -> Disable hardware JTAG
+```
+
+Uma vez desabilitado via eFuse, não pode ser reativado.
+
+### Desabilitar UART Download Mode
+
+```bash
+# Security features -> UART ROM download mode -> Disabled
+```
+
+Impede flash via UART após secure boot ativo.
+
+### Protect eFuses
+
+```bash
+# Após configurar, proteja leitura dos eFuses sensíveis
+espefuse.py burn_efuse DISABLE_JTAG
+espefuse.py write_protect_efuse FLASH_CRYPT_CNT
+```
+
+## Checklist de Segurança para Produção
+
+| Item                             | Status |
+| -------------------------------- | ------ |
+| Secure Boot V2 habilitado        | ☐      |
+| Flash Encryption em modo Release | ☐      |
+| JTAG desabilitado                | ☐      |
+| UART download mode desabilitado  | ☐      |
+| NVS encryption habilitado        | ☐      |
+| OTA apenas via HTTPS             | ☐      |
+| Firmware assinado                | ☐      |
+| Anti-rollback configurado        | ☐      |
+| Chaves de produção separadas     | ☐      |
+| Backup seguro das chaves         | ☐      |
+| eFuses protegidos contra leitura | ☐      |
+
+## Desenvolvimento vs Produção
+
+| Aspecto          | Desenvolvimento     | Produção              |
+| ---------------- | ------------------- | --------------------- |
+| Secure Boot      | Opcional ou dev key | Obrigatório, prod key |
+| Flash Encryption | Development mode    | Release mode          |
+| JTAG             | Habilitado          | Desabilitado          |
+| UART Boot        | Habilitado          | Desabilitado          |
+| OTA              | HTTP OK para testes | Apenas HTTPS          |
+
+**Nunca** envie dispositivos com configuração de desenvolvimento.
+
+---
+
+**Referências:**
+
+- Espressif. _ESP-IDF Security Guide_
+- Espressif. _ESP32 Technical Reference Manual_, Security Chapter
+- OWASP. _IoT Security Verification Standard_

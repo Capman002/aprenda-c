@@ -1,0 +1,110 @@
+---
+title: "Ferramentas Visuais & Laboratório Real"
+description: "Domine o Git no VS Code, conheça o cliente Fork e coloque seus projetos na nuvem."
+difficulty: "Iniciante"
+duration: "30 min"
+tags: ["VS Code", "Fork", "GitLens", "Lab"]
+order: 6
+---
+
+A linha de comando (`CLI`) é essencial para entender o que está acontecendo. Mas no dia a dia, ferramentas visuais aceleram o trabalho e reduzem erros cognitivos.
+
+## 1. Git no VS Code (Nativo + Extensões)
+
+O VS Code já vem com um cliente Git robusto na aba **Source Control** (Ctrl+Shift+G).
+
+### Fluxo Básico no VS Code
+
+1.  **Stage:** Clique no `+` ao lado do arquivo alterado.
+2.  **Commit:** Digite a mensagem na caixa de texto e `Ctrl+Enter`.
+3.  **Sync:** O botão azul "Sync Changes" faz `git pull` seguido de `git push`.
+
+### Extensões Indispensáveis
+
+A funcionalidade nativa é boa, mas com extensões vira uma IDE poderosa:
+
+1.  **Git Graph:**
+    - Visualização gráfica do histórico (igual ao `git log --graph`, mas colorido e clicável).
+    - Permite clicar com botão direito num commit antigo e fazer "Checkout", "Cherry-pick" ou "Revert" visualmente.
+2.  **GitLens (Supercharged Git):**
+    - **Blame Inline:** Mostra quem editou a linha atual e quando, direto no editor de código (fantasma cinza).
+    - **File History:** Navegue pelas versões anteriores de um arquivo específico.
+
+## 2. Clientes GUI Dedicados: O Poder do Fork
+
+Embora o VS Code seja ótimo, para operações complexas (rebase interativo, limpeza de commits, visualização de diffs grandes), um cliente dedicado é superior.
+
+Recomendação Sênior: **Fork** (Windows/Mac)
+
+- **Por que o Fork?** É extremamente rápido (nativo), limpo e possui uma visualização de "Tree" perfeita.
+- **Interactive Rebase Visual:** Arraste e solte commits para reordená-los ou fundi-los (squash). Muito mais seguro que editar texto no `vim` durante um rebase.
+
+> Outras opções: GitKraken (muito visual, mas pesado), Sourcetree (clássico, mas lento).
+
+## 3. Atividade Prática: Publicando seu Portfólio
+
+Chega de teoria. Vamos colocar os projetos de C que criamos durante o curso no GitHub.
+
+### Passo 1: Preparação
+
+Vá para a pasta raiz onde estão seus projetos do curso (ex: `c:\projetos\Curso-C-Embedded`).
+
+```bash
+cd c:\projetos\Curso-C-Embedded
+git init
+```
+
+### Passo 2: O `.gitignore` Obrigatório
+
+Crie um arquivo `.gitignore` na raiz. **Isso é crucial**. Não queremos subir binários compilados (`.exe`, `.o`, `.bin`) nem pastas de IDE.
+
+Conteúdo sugerido para C/Embedded:
+
+```text
+# Prerrequisitos de build
+build/
+bin/
+out/
+*.o
+*.obj
+*.exe
+*.bin
+*.hex
+*.elf
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+```
+
+### Passo 3: Primeiro Commit
+
+Adicione tudo (o git vai respeitar o ignore) e faça o commit inicial.
+
+```bash
+git add .
+git commit -m "chore: initial commit of C course projects"
+```
+
+### Passo 4: Conectando ao GitHub no VS Code
+
+1.  Crie um repositório **Vazio** no GitHub (sem README, sem gitignore). Chame de `curso-c-embedded-labs`.
+2.  Copie a URL SSH (`git@github.com:seuusuario/curso-c-embedded-labs.git`).
+3.  No terminal do VS Code:
+
+```bash
+git remote add origin git@github.com:seuusuario/curso-c-embedded-labs.git
+git branch -M main
+git push -u origin main
+```
+
+### Missão Extra: Modificação e Diff
+
+1.  Abra um dos códigos `.c` e melhore um comentário.
+2.  Veja a alteração na aba **Source Control** do VS Code.
+3.  Clique no arquivo para ver o **Diff** (Antes vs Depois).
+4.  Faça o Stage, Commit e Push usando apenas a interface do VS Code.

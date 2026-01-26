@@ -1,0 +1,258 @@
+---
+title: "Controle de Fluxo"
+description: "Condicionais (if/else, switch) e loops (for, while) para controlar a execução."
+difficulty: "Iniciante"
+duration: "25 min"
+tags: ["C", "if", "else", "switch", "for", "while", "loops"]
+order: 1
+---
+
+import Callout from "../../../components/Callout.astro";
+
+Até agora, seu código executa linha por linha, de cima para baixo. Mas programas reais precisam **tomar decisões** e **repetir ações**. É aqui que entram as estruturas de controle.
+
+> Conforme *Linguagem C Completa e Descomplicada* (André Backes): "Os comandos de controle condicional e de repetição completam a apresentação da estrutura básica da linguagem."
+
+## Operadores de Comparação
+
+Antes de controlar fluxo, você precisa comparar valores:
+
+| Operador | Significado | Exemplo |
+|----------|-------------|---------|
+| `==` | Igual a | `x == 5` |
+| `!=` | Diferente de | `x != 0` |
+| `<` | Menor que | `x < 10` |
+| `>` | Maior que | `x > 0` |
+| `<=` | Menor ou igual | `x <= 100` |
+| `>=` | Maior ou igual | `x >= 18` |
+
+<Callout type="error" title="Erro Clássico">
+  Não confunda `=` (atribuição) com `==` (comparação)!
+  
+  ```c
+  if (x = 5)  // ERRADO: Isso ATRIBUI 5 a x, não compara!
+  if (x == 5) // CERTO: Isso COMPARA x com 5
+  ```
+</Callout>
+
+## Operadores Lógicos
+
+Combine condições com lógica booleana:
+
+| Operador | Significado | Exemplo |
+|----------|-------------|---------|
+| `&&` | E (AND) | `x > 0 && x < 100` |
+| `\|\|` | OU (OR) | `x == 0 \|\| x == 1` |
+| `!` | NÃO (NOT) | `!encontrado` |
+
+## Condicional: `if` e `else`
+
+Execute código apenas se uma condição for verdadeira:
+
+```c
+int idade = 17;
+
+if (idade >= 18) {
+    printf("Você é maior de idade.\n");
+} else {
+    printf("Você é menor de idade.\n");
+}
+```
+
+### Múltiplas Condições: `else if`
+
+```c
+int nota = 75;
+
+if (nota >= 90) {
+    printf("Conceito A\n");
+} else if (nota >= 70) {
+    printf("Conceito B\n");
+} else if (nota >= 50) {
+    printf("Conceito C\n");
+} else {
+    printf("Reprovado\n");
+}
+```
+
+### Operador Ternário (Atalho)
+
+Para condições simples, existe um atalho em uma linha:
+
+```c
+int idade = 20;
+char *status = (idade >= 18) ? "Adulto" : "Menor";
+printf("%s\n", status);
+```
+
+## Seleção Múltipla: `switch`
+
+Quando você precisa comparar uma variável com vários valores fixos, o `switch` é mais elegante que muitos `else if`:
+
+```c
+char opcao;
+printf("Digite sua opção (a/b/c): ");
+scanf(" %c", &opcao);
+
+switch (opcao) {
+    case 'a':
+        printf("Você escolheu A\n");
+        break;
+    case 'b':
+        printf("Você escolheu B\n");
+        break;
+    case 'c':
+        printf("Você escolheu C\n");
+        break;
+    default:
+        printf("Opção inválida!\n");
+}
+```
+
+<Callout type="warning" title="O break é essencial!">
+  Sem o `break`, a execução "cai" para o próximo `case`:
+  
+  ```c
+  case 'a':
+      printf("A\n");
+      // Sem break aqui...
+  case 'b':
+      printf("B\n"); // Isso também executa se opção == 'a'!
+  ```
+</Callout>
+
+## Repetição: `while`
+
+Repete enquanto a condição for verdadeira:
+
+```c
+int contador = 1;
+
+while (contador <= 5) {
+    printf("Contagem: %d\n", contador);
+    contador++;
+}
+```
+
+Saída:
+```
+Contagem: 1
+Contagem: 2
+Contagem: 3
+Contagem: 4
+Contagem: 5
+```
+
+## Repetição: `do-while`
+
+Parecido com `while`, mas **executa pelo menos uma vez** antes de verificar a condição:
+
+```c
+int numero;
+
+do {
+    printf("Digite um número positivo: ");
+    scanf("%d", &numero);
+} while (numero <= 0);  // Repete se inválido
+
+printf("Você digitou: %d\n", numero);
+```
+
+## Repetição: `for`
+
+Ideal quando você sabe quantas vezes repetir:
+
+```c
+for (int i = 0; i < 5; i++) {
+    printf("Iteração %d\n", i);
+}
+```
+
+**Estrutura do `for`:**
+
+```c
+for (inicialização; condição; incremento) {
+    // corpo do loop
+}
+```
+
+| Parte | Significado |
+|-------|-------------|
+| `int i = 0` | Executado UMA vez, antes do loop |
+| `i < 5` | Testado ANTES de cada iteração |
+| `i++` | Executado DEPOIS de cada iteração |
+
+### Iterando Arrays
+
+```c
+int notas[] = {90, 85, 78, 92, 88};
+int soma = 0;
+
+for (int i = 0; i < 5; i++) {
+    soma += notas[i];
+}
+
+printf("Média: %.1f\n", soma / 5.0);
+```
+
+## Controlando Loops: `break` e `continue`
+
+### `break`: Sai do loop imediatamente
+
+```c
+for (int i = 1; i <= 100; i++) {
+    if (i == 5) {
+        printf("Encontrei o 5! Parando.\n");
+        break;  // Sai do loop
+    }
+    printf("%d\n", i);
+}
+// Imprime: 1, 2, 3, 4, "Encontrei o 5! Parando."
+```
+
+### `continue`: Pula para próxima iteração
+
+```c
+for (int i = 1; i <= 5; i++) {
+    if (i == 3) {
+        continue;  // Pula o 3
+    }
+    printf("%d\n", i);
+}
+// Imprime: 1, 2, 4, 5 (sem o 3)
+```
+
+## Exemplo Prático: Validação de Senha
+
+```c
+#include <stdio.h>
+
+int main() {
+    int senha_correta = 1234;
+    int tentativas = 3;
+    int senha;
+    
+    while (tentativas > 0) {
+        printf("Digite a senha (%d tentativas restantes): ", tentativas);
+        scanf("%d", &senha);
+        
+        if (senha == senha_correta) {
+            printf("Acesso liberado!\n");
+            break;
+        } else {
+            printf("Senha incorreta.\n");
+            tentativas--;
+        }
+    }
+    
+    if (tentativas == 0) {
+        printf("Acesso bloqueado!\n");
+    }
+    
+    return 0;
+}
+```
+
+## Próximo Passo
+
+Com variáveis e controle de fluxo, você já consegue escrever programas úteis. Agora vamos aprender a **organizar código em funções** para não repetir lógica.

@@ -1,0 +1,67 @@
+---
+title: "Estratégias de Branching: GitFlow, Trunk-Based e CI"
+description: "Quando criar branches, quando integrar, e como CI reduz o risco de merge hell."
+difficulty: "Avançado"
+duration: "25 min"
+tags: ["Git", "Workflow", "Branching", "DevOps"]
+order: 5
+---
+
+import YouTube from "../../../components/YouTube.astro";
+
+Não existe “o jeito certo”. Existe o jeito certo para _sua equipe_.
+
+A pergunta sênior não é “qual modelo é melhor?”, e sim: “qual modelo eu consigo sustentar com meu nível de automação e disciplina?”.
+
+<YouTube id="hn_88MUudTo" title="Git Flow vs Trunk Based Development" />
+
+## Git Flow: controle por versões (2010)
+
+O Git Flow foi proposto por Vincent Driessen em 2010, com duas branches principais de longa vida (`master/main` e `develop`) e branches de suporte (`feature/*`, `release/*`, `hotfix/*`). [page:0]
+A própria descrição do modelo enfatiza que `master` (hoje muitas equipes chamam de `main`) deve refletir um estado pronto para produção, enquanto `develop` concentra o que vai para a próxima release. [page:0]
+
+**Fluxo típico (resumido):**
+
+1. Criar `feature/x` a partir de `develop`.
+2. Terminar e integrar em `develop`.
+3. Criar `release/x.y` quando for “congelar” para estabilizar.
+4. Corrigir bugs na `release/*`.
+5. Merge de `release/*` em `main` e de volta em `develop`.
+
+**Quando tende a funcionar bem:**
+
+- Software com versões explícitas e suporte a múltiplas versões no “mundo real” (desktop, firmware, produtos distribuídos). [page:0]
+
+**Risco clássico:**
+
+- Branches vivas por muito tempo aumentam conflitos e retrabalho (“merge hell”).
+
+## Trunk-Based Development (TBD): integrar rápido
+
+No Trunk-Based, a regra prática é manter branches com vida curta e integrar o mais rápido possível no tronco (`main`). [page:1]
+A intenção é reduzir o tempo em que mudanças ficam “isoladas”, diminuindo conflitos e achando problemas cedo. [page:1]
+
+**Como não quebrar todo mundo:**
+
+- Mudanças pequenas e frequentes.
+- Feature flags para esconder trabalho incompleto (o código existe, mas não “ativa” para usuário). [page:1]
+- Build e testes automatizados rápidos para dar feedback. [page:1]
+
+## Continuous Integration (CI): a disciplina que viabiliza
+
+CI é a prática de integrar mudanças na base compartilhada com frequência (tipicamente pelo menos diariamente) e verificar cada integração com build automatizado e testes para detectar erros cedo. [page:1]
+Em outras palavras: CI é o “motor” que dá segurança para integrar mais cedo (o que combina muito com Trunk, e pode existir também com Git Flow). [page:1]
+
+**Regras práticas de CI (para alunos lembrarem):**
+
+- Cada push relevante dispara build/testes automáticos.
+- Build quebrado é prioridade máxima para corrigir.
+- Build precisa ser rápido o suficiente para virar feedback diário.
+
+## Escolha rápida (sem dogma)
+
+| Cenário                                                    | Estratégia mais comum                           |
+| ---------------------------------------------------------- | ----------------------------------------------- |
+| Versões bem marcadas, release mais “pesada”, QA manual     | Git Flow (talvez simplificado)                  |
+| Deploy frequente, foco em feedback rápido, automação forte | Trunk-Based + CI forte                          |
+| Quer subir o nível do time com segurança                   | Comece fortalecendo CI, depois encurte branches |

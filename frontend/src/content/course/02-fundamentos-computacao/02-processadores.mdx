@@ -1,0 +1,123 @@
+---
+title: "Como Processadores Funcionam"
+description: "Fetch, decode, execute: o ciclo que acontece bilhões de vezes por segundo."
+difficulty: "Iniciante"
+duration: "15 min"
+tags: ["CPU", "Processadores", "Clock", "Registradores", "RISC", "CISC"]
+order: 2
+---
+
+Quando você escreve um programa em C e compila, o resultado é uma sequência de **instruções de máquina** — números binários que o processador sabe interpretar e executar. Entender como isso funciona ajuda a escrever código mais eficiente e debugar problemas de performance.
+
+## O que é uma CPU
+
+A **CPU** (Central Processing Unit) é o componente que executa as instruções do seu programa. Ela não "entende" C ou Python — apenas sequências de bytes que representam operações específicas.
+
+Uma CPU moderna contém:
+
+- **Unidade de Controle**: Coordena a execução, busca instruções, gerencia o fluxo
+- **ALU** (Arithmetic Logic Unit): Executa operações matemáticas e lógicas
+- **Registradores**: Memória ultrarrápida dentro do próprio chip
+- **Cache**: Memória intermediária entre registradores e RAM
+
+## O Ciclo Fetch-Decode-Execute
+
+O processador opera em um loop constante de três etapas:
+
+### 1. Fetch (Buscar)
+
+A CPU lê a próxima instrução da memória. O endereço da instrução está em um registrador especial chamado **Program Counter** (PC) ou Instruction Pointer.
+
+### 2. Decode (Decodificar)
+
+A CPU interpreta os bits da instrução para descobrir:
+
+- Qual operação executar (soma, comparação, salto, etc.)
+- Quais dados usar (registradores, endereços de memória)
+
+### 3. Execute (Executar)
+
+A ALU realiza a operação. O resultado pode ir para um registrador, para a memória, ou alterar o fluxo do programa (no caso de um salto condicional).
+
+Após executar, o Program Counter é atualizado para apontar para a próxima instrução, e o ciclo recomeça.
+
+Um processador de 3 GHz executa aproximadamente **3 bilhões desses ciclos por segundo**.
+
+## Registradores
+
+Registradores são a memória mais rápida que existe — estão dentro da própria CPU. Acessar um registrador leva menos de 1 nanosegundo; acessar a RAM pode levar 100 nanosegundos.
+
+Em arquiteturas x86-64 (Intel/AMD), você tem registradores como:
+
+- `rax`, `rbx`, `rcx`, `rdx` — propósito geral
+- `rsp` — stack pointer
+- `rip` — instruction pointer
+- `rflags` — flags de status (zero, negativo, overflow, etc.)
+
+Quando você escreve `int x = a + b;`, o compilador pode traduzir isso para algo como:
+
+```asm
+mov eax, [a]    ; Carrega 'a' para o registrador eax
+add eax, [b]    ; Soma 'b' ao eax
+mov [x], eax    ; Salva resultado em 'x'
+```
+
+## Clock: O Ritmo do Processador
+
+O **clock** é um sinal elétrico periódico que sincroniza as operações da CPU. Cada "tick" do clock avança o processador um passo.
+
+- **3 GHz** = 3 bilhões de ciclos por segundo
+- 1 ciclo de clock = ~0.33 nanosegundos
+
+Mas clock alto não significa automaticamente mais performance. Se uma CPU precisa de 5 ciclos para executar uma instrução e outra precisa de 2, a segunda pode ser mais rápida mesmo com clock menor.
+
+## Instruções de Máquina
+
+Uma **instrução de máquina** é a operação atômica que a CPU sabe executar. Exemplos:
+
+- Somar dois registradores
+- Carregar um valor da memória para um registrador
+- Comparar dois valores e definir uma flag
+- Saltar para outro endereço se uma condição for verdadeira
+
+Cada instrução é codificada em bytes. Em x86, as instruções têm tamanho variável (de 1 a 15 bytes). Em ARM, geralmente são de tamanho fixo (4 bytes).
+
+Quando você compila um programa C, o compilador transforma seu código em milhares dessas instruções.
+
+## RISC vs CISC
+
+Existem duas filosofias de design de processadores:
+
+### CISC (Complex Instruction Set Computer)
+
+- Instruções complexas que fazem muita coisa de uma vez
+- Quantidade grande de instruções diferentes
+- Exemplo: Intel x86, AMD64
+- Uma instrução pode acessar memória E fazer uma operação
+
+### RISC (Reduced Instruction Set Computer)
+
+- Instruções simples e uniformes
+- Menos tipos de instruções, mais fáceis de otimizar
+- Exemplo: ARM, RISC-V, MIPS
+- Operações de memória e cálculo são separadas
+
+Na prática moderna, a distinção ficou borrada. Processadores x86 internamente quebram instruções CISC em micro-operações (µops) que parecem RISC.
+
+## Por que Isso Importa para Você
+
+1. **Cache misses são caros**: Se seus dados não estão em cache, a CPU espera. Organize seus dados para acesso sequencial quando possível.
+
+2. **Branch prediction**: CPUs tentam adivinhar saltos condicionais. Código com padrões previsíveis roda mais rápido.
+
+3. **Instruções por ciclo (IPC)**: Nem todo código é igual. Loops apertados com operações simples podem ser mais rápidos que código "esperto" cheio de saltos.
+
+4. **Compiladores são bons**: Antes de otimizar à mão, deixe o compilador trabalhar (`-O2`, `-O3`). Ele conhece a arquitetura melhor que a maioria dos programadores.
+
+---
+
+**Referências:**
+
+- Patterson, D. A., & Hennessy, J. L. (2017). _Computer Organization and Design_. Morgan Kaufmann
+- Intel Corporation. _Intel 64 and IA-32 Architectures Software Developer's Manual_
+- ARM Ltd. _ARM Architecture Reference Manual_

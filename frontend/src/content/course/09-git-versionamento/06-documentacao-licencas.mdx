@@ -1,0 +1,79 @@
+---
+title: "Documentação & Licenças Open Source"
+description: "Como proteger legalmente seu código e documentá-lo para que humanos entendam."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Documentation", "Licenses", "Open Source", "Law"]
+order: 4
+---
+
+Código sem licença é juridicamente "todos os direitos reservados". Ninguém pode usar.
+Código sem documentação é inútil.
+
+## Licenças Open Source: O Guia Sênior
+
+### 1. Permissivas (Faça o que quiser)
+
+Ideais para adoção máxima e uso corporativo.
+
+- **MIT:** A mais simples. "Use, modifique, venda, só mantenha meu nome no arquivo de licença". (Ex: React, Node.js).
+- **Apache 2.0:** Similar à MIT, mas com **Proteção contra Patentes**. Se você me processar por patente usando meu software, sua licença cai. Favorita de grandes empresas (Google, Android).
+
+### 2. Copyleft (Viral)
+
+Ideais para garantir a liberdade do software para sempre.
+
+- **GPLv3:** Se você usar meu código, o SEU código derivado também tem que ser GPL (aberto). Empresas fogem disso em produtos proprietários.
+- **LGPL:** Permite linkar dinamicamente (`.dll`, `.so`) sem abrir seu código proprietário. Comum em bibliotecas C (glibc).
+
+### 3. Licenças para Hardware/Documentação
+
+- **Creative Commons:** Para docs e imagens, não código.
+
+## Documentação Técnica
+
+### O README.md Perfeito
+
+É a capa do seu projeto. Deve responder em 5 segundos:
+
+1.  O que é?
+2.  Para que serve?
+3.  Como rodo agora? (Quickstart)
+
+Exemplo de estrutura:
+
+```markdown
+# Meu Projeto IoT
+
+Sistema de telemetria via Zenoh para ESP32.
+
+## Features
+
+- [x] Leitura DHT22
+- [ ] OTA Updates
+
+## Build
+
+`make flash`
+```
+
+### Documentando Código C (Doxygen vs Sphinx)
+
+Para API Reference (gerar site a partir dos comentários):
+
+- **Doxygen:** O padrão da indústria C/C++. Lê comentários `/** ... */`. Feio por padrão, mas robusto.
+- **Sphinx:** Baseado em Python. Muito mais bonito, templates modernos (ReadTheDocs). Com plugin `Breathe`, lê XML do Doxygen.
+
+**Best Practice Sênior:**
+Não comente o óbvio (`i++; // Incrementa i`).
+Comente o **PORQUÊ** e as **RESTRIÇÕES**.
+
+```c
+/**
+ * @brief Calcula CRC32.
+ * @warning Esta função não é reentrante (usa buffer estático).
+ * @param data Ponteiro para dados (não pode ser NULL).
+ * @return Checksum calculado.
+ */
+uint32_t calc_crc32(const uint8_t *data, size_t len);
+```

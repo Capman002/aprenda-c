@@ -1,0 +1,120 @@
+---
+title: "Setup Profissional: SSH, Config e Remotes"
+description: "Configure seu ambiente como um sênior. Chaves SSH modernas, Clones seguros e Gitconfig otimizado."
+difficulty: "Iniciante"
+duration: "15 min"
+tags: ["Git", "SSH", "Config", "Clone"]
+order: 0
+---
+
+Antes de commitar, você precisa existir.
+
+## 1. Identidade e Configuração Global
+
+Não use apenas `user.name`. Configure os comportamentos padrão para evitar dores de cabeça futuras.
+
+```bash
+# Identidade
+git config --global user.name "Seu Nome"
+git config --global user.email "seu.email@empresa.com"
+
+# Editor: Não fique preso no VIM se não souber sair (:q!)
+git config --global core.editor "code --wait"
+
+# Workflow: Evite "Merge Commits" desnecessários no pull
+git config --global pull.rebase true
+
+# Line Endings (CRLF vs LF): O pesadelo Windows/Linux
+# No Windows:
+git config --global core.autocrlf true
+# No Linux/Mac:
+git config --global core.autocrlf input
+```
+
+### O Arquivo `.gitignore` Global
+
+Você não quer commitar `.DS_Store` ou `Thumbs.db` em lugar nenhum. Crie um gitignore global.
+
+```bash
+touch ~/.gitignore_global
+git config --global core.excludesfile ~/.gitignore_global
+```
+
+Adicione arquivos de SO nele. Deixe o `.gitignore` do projeto APENAS para arquivos do projeto (build artifacts, env vars).
+
+## 2. Autenticação SSH (Esqueça HTTPS)
+
+HTTPS exige senha/token a cada push (ou credenciais cacheadas que expiram). **SSH** é criptografia assimétrica pura.
+
+### Por que Ed25519?
+
+Não use RSA padrão (`ssh-keygen -t rsa`). É lento e as chaves são gigantes.
+Use **Ed25519**. Curva elíptica, chaves pequenas, extremamente seguro e rápido.
+
+```bash
+# Gerar chave
+ssh-keygen -t ed25519 -C "seu.email@empresa.com"
+```
+
+### O Agente SSH
+
+Não digite a senha da chave toda vez. Adicione ao agente.
+
+```bash
+# Iniciar agente (se não estiver rodando)
+eval "$(ssh-agent -s)"
+
+# Adicionar chave
+ssh-add ~/.ssh/id_ed25519
+```
+
+> **Dica:** No GitHub/GitLab, vá em Settings -> SSH Keys e cole o conteúdo de `cat ~/.ssh/id_ed25519.pub`.
+
+## 3. Clonando e Gerenciando Remotes
+
+### Git Clone: SSH vs HTTPS
+
+```bash
+# HTTPS (Evite para desenvolvimento)
+git clone https://github.com/torvalds/linux.git
+
+# SSH (O jeito profissional)
+git clone git@github.com:torvalds/linux.git
+```
+
+### Gerenciando Remotes
+
+Às vezes você clona via HTTPS e quer mudar para SSH sem baixar tudo de novo.
+
+```bash
+# Listar
+git remote -v
+
+# Mudar URL
+git remote set-url origin git@github.com:usuario/repo.git
+
+# Adicionar um "upstream" (para manter fork atualizado)
+git remote add upstream git@github.com:original/repo.git
+```
+
+## 4. Comandos de Emergência
+
+### "Commitando" arquivos errados
+
+Você deu `git add .` e adicionou a pasta `node_modules`. O que fazer?
+
+```bash
+# Remove do "staging" (index), mas mantém o arquivo no disco
+git rm --cached -r node_modules/
+```
+
+### "Esqueci de adicionar um arquivo no último commit"
+
+Não crie um commit "fix". Use o `--amend`.
+
+```bash
+git add arquivo_esquecido.c
+git commit --amend --no-edit
+```
+
+Isso reescreve o commit anterior. Só faça se não tiver dado push ainda!

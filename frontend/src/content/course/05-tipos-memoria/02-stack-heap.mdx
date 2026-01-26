@@ -1,0 +1,269 @@
+---
+title: "Stack vs Heap"
+description: "Onde suas variáveis vivem — e por que isso importa."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Stack", "Heap", "malloc", "free", "Memória"]
+order: 2
+---
+
+Em C, você controla a memória. Isso é poderoso e perigoso. Para usar esse poder corretamente, você precisa entender as duas regiões principais de memória: **Stack** e **Heap**.
+
+## O Modelo de Memória
+
+Quando um programa C roda, a memória é dividida em segmentos:
+
+```
+┌─────────────────────┐  Endereços altos
+│       Stack         │  ↓ Cresce para baixo
+├─────────────────────┤
+│         ↕           │  (espaço livre)
+├─────────────────────┤
+│        Heap         │  ↑ Cresce para cima
+├─────────────────────┤
+│   Dados (BSS/Data)  │  Variáveis globais
+├─────────────────────┤
+│       Código        │  Instruções do programa
+└─────────────────────┘  Endereços baixos
+```
+
+## Stack: Automática e Rápida
+
+A **stack** (pilha) é gerenciada automaticamente pelo compilador. Toda vez que você declara uma variável local, ela vai para a stack.
+
+```c
+void funcao() {
+    int x = 10;        // Alocado na stack
+    char buffer[100];  // Também na stack
+    // ...
+}  // x e buffer são liberados automaticamente aqui
+```
+
+### Características da Stack
+
+| Aspecto     | Stack                      |
+| ----------- | -------------------------- |
+| Alocação    | Automática                 |
+| Desalocação | Automática (fim do escopo) |
+| Velocidade  | Extremamente rápida        |
+| Tamanho     | Limitado (~1-8 MB típico)  |
+| Estrutura   | LIFO (Last In, First Out)  |
+
+### Como Funciona
+
+Cada chamada de função cria um **stack frame** — um bloco contendo:
+
+- Parâmetros da função
+- Variáveis locais
+- Endereço de retorno
+
+```c
+void funcaoB() {
+    int b = 2;
+}
+
+void funcaoA() {
+    int a = 1;
+    funcaoB();  // Novo frame empilhado
+}              // Frame de B desempilhado
+
+int main() {
+    funcaoA();  // Novo frame empilhado
+    return 0;   // Frames desempilhados
+}
+```
+
+```
+Stack durante funcaoB():
+┌─────────────┐
+│ b = 2       │ ← Frame de funcaoB
+├─────────────┤
+│ a = 1       │ ← Frame de funcaoA
+├─────────────┤
+│ (main)      │ ← Frame de main
+└─────────────┘
+```
+
+### Stack Overflow
+
+A stack tem tamanho limitado. Se você exceder:
+
+```c
+// Recursão infinita
+void infinito() {
+    int arr[1000];  // Cada chamada usa ~4KB
+    infinito();     // Nunca para → Stack Overflow
+}
+
+// Array muito grande
+void problema() {
+    int gigante[10000000];  // 40MB na stack → CRASH
+}
+```
+
+Resultado: **Segmentation Fault**.
+
+## Heap: Manual e Flexível
+
+O **heap** é para alocação dinâmica — quando você não sabe o tamanho em tempo de compilação, ou precisa que dados sobrevivam ao escopo.
+
+```c
+#include <stdlib.h>
+
+void funcao() {
+    int *ptr = malloc(sizeof(int) * 100);  // Aloca no heap
+    if (ptr == NULL) {
+        // Alocação falhou!
+        return;
+    }
+
+    // Usa ptr...
+
+    free(ptr);  // VOCÊ deve liberar
+}
+```
+
+### Características do Heap
+
+| Aspecto     | Heap                                   |
+| ----------- | -------------------------------------- |
+| Alocação    | Manual (`malloc`, `calloc`, `realloc`) |
+| Desalocação | Manual (`free`)                        |
+| Velocidade  | Mais lenta que stack                   |
+| Tamanho     | Grande (GB ou mais)                    |
+| Estrutura   | Sem ordem específica                   |
+
+### Funções de Alocação
+
+```c
+// malloc: aloca N bytes (lixo no conteúdo)
+int *arr = malloc(100 * sizeof(int));
+
+// calloc: aloca e zera a memória
+int *arr = calloc(100, sizeof(int));
+
+// realloc: redimensiona alocação existente
+arr = realloc(arr, 200 * sizeof(int));
+
+// free: libera a memória
+free(arr);
+```
+
+**SEMPRE** verifique se a alocação funcionou:
+
+```c
+int *ptr = malloc(1000);
+if (ptr == NULL) {
+    fprintf(stderr, "Erro: memória insuficiente\n");
+    exit(1);
+}
+```
+
+### Memory Leaks
+
+Se você não chama `free`, a memória fica ocupada até o programa terminar:
+
+```c
+void vazamento() {
+    int *ptr = malloc(1000);
+    // Esqueceu free(ptr)!
+}  // ptr é destruído, mas os 1000 bytes continuam alocados
+
+int main() {
+    for (int i = 0; i < 1000000; i++) {
+        vazamento();  // Vaza 1KB por iteração → 1GB vazado
+    }
+}
+```
+
+Use **Valgrind** para detectar leaks:
+
+```bash
+valgrind --leak-check=full ./programa
+```
+
+## Comparação Direta
+
+|                   | Stack                     | Heap                        |
+| ----------------- | ------------------------- | --------------------------- |
+| **Vida útil**     | Até o fim do escopo       | Até você chamar `free`      |
+| **Velocidade**    | ~1 instrução              | ~100+ instruções            |
+| **Fragmentação**  | Nenhuma                   | Pode fragmentar             |
+| **Thread safety** | Cada thread tem sua stack | Compartilhado entre threads |
+| **Erro típico**   | Stack overflow            | Memory leak, use-after-free |
+
+## Quando Usar Cada Um
+
+### Use Stack quando:
+
+- Tamanho conhecido em tempo de compilação
+- Dados pequenos (< alguns KB)
+- Variável usada apenas no escopo atual
+- Performance é crítica
+
+```c
+void processar() {
+    int contador = 0;           // Stack
+    char nome[50];              // Stack
+    struct Ponto p = {0, 0};    // Stack
+}
+```
+
+### Use Heap quando:
+
+- Tamanho determinado em runtime
+- Dados grandes (evitar stack overflow)
+- Dados precisam sobreviver ao escopo
+- Estruturas de tamanho variável (listas, árvores)
+
+```c
+int* criar_array(int n) {
+    int *arr = malloc(n * sizeof(int));  // Heap
+    return arr;  // Sobrevive ao retorno
+}
+
+void processar_arquivo(const char *path) {
+    // Arquivo pode ter qualquer tamanho
+    char *buffer = malloc(tamanho_arquivo);
+    // ...
+    free(buffer);
+}
+```
+
+## Erros Clássicos
+
+### Use-After-Free
+
+```c
+int *ptr = malloc(100);
+free(ptr);
+*ptr = 42;  // ERRO: ptr aponta para memória liberada
+```
+
+### Double Free
+
+```c
+int *ptr = malloc(100);
+free(ptr);
+free(ptr);  // ERRO: dupla liberação
+```
+
+### Acesso Fora dos Limites
+
+```c
+int *arr = malloc(10 * sizeof(int));
+arr[20] = 5;  // ERRO: índice 20 está fora da alocação
+```
+
+## Regra de Ouro
+
+**Toda alocação deve ter uma liberação correspondente.**
+
+Se você chama `malloc`, em algum lugar do código precisa haver um `free` para aquele ponteiro. Estabeleça convenções claras sobre quem é "dono" da memória e responsável por liberá-la.
+
+---
+
+**Referências:**
+
+- Kernighan, B. W., & Ritchie, D. M. (1988). _The C Programming Language_, Chapter 7
+- Seacord, R. C. (2013). _Secure Coding in C and C++_, Chapter 4

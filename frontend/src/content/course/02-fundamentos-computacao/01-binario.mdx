@@ -1,0 +1,128 @@
+---
+title: "Sistema Binário"
+description: "Por que computadores só entendem 0 e 1 — e como isso afeta tudo."
+difficulty: "Iniciante"
+duration: "15 min"
+tags: ["Binário", "Bits", "Bytes", "Complemento de Dois"]
+order: 1
+---
+
+Computadores não entendem português, inglês ou C. No nível mais fundamental, eles só distinguem entre dois estados: tem tensão ou não tem. Ligado ou desligado. 1 ou 0.
+
+Tudo que você faz em um computador — texto, imagens, vídeos, programas — é, no fim das contas, uma sequência gigantesca de zeros e uns.
+
+## Por que Binário?
+
+A razão é física, não matemática.
+
+Circuitos digitais trabalham com dois níveis de tensão bem definidos. Em tecnologia TTL (Transistor-Transistor Logic), por exemplo:
+
+- **0V** representa o dígito `0`
+- **5V** representa o dígito `1`
+
+Por que não usar 10 níveis (como decimal)? Porque distinguir entre 10 níveis de tensão com precisão é muito mais difícil e suscetível a erros. Com apenas 2 níveis, a margem de tolerância é enorme — o circuito só precisa detectar "baixo" ou "alto".
+
+Essa simplicidade é o que permite bilhões de transistores funcionarem de forma confiável em um chip do tamanho de uma unha.
+
+## Bits e Bytes
+
+**Bit** (Binary Digit): A menor unidade de informação. Um bit armazena 0 ou 1.
+
+**Byte**: Um grupo de 8 bits. Com 8 bits, você tem 2⁸ = 256 combinações possíveis (de 00000000 a 11111111).
+
+| Unidade           | Quantidade de Bits | Valores Possíveis |
+| ----------------- | ------------------ | ----------------- |
+| 1 bit             | 1                  | 2 (0 ou 1)        |
+| 1 nibble          | 4                  | 16 (0-15)         |
+| 1 byte            | 8                  | 256 (0-255)       |
+| 2 bytes (16 bits) | 16                 | 65.536            |
+| 4 bytes (32 bits) | 32                 | ~4,3 bilhões      |
+
+Quando você vê que um processador é "64 bits", significa que ele processa 64 bits de uma vez. Isso afeta o tamanho máximo de memória endereçável e a velocidade de certas operações.
+
+## Conversão: Decimal para Binário
+
+Para converter um número decimal para binário, divida sucessivamente por 2 e anote os restos:
+
+**Exemplo: 13 em binário**
+
+| Divisão | Quociente | Resto |
+| ------- | --------- | ----- |
+| 13 ÷ 2  | 6         | 1     |
+| 6 ÷ 2   | 3         | 0     |
+| 3 ÷ 2   | 1         | 1     |
+| 1 ÷ 2   | 0         | 1     |
+
+Leia os restos de baixo para cima: **1101**
+
+Verificação: (1×8) + (1×4) + (0×2) + (1×1) = 8 + 4 + 0 + 1 = 13 ✓
+
+## Conversão: Binário para Decimal
+
+Multiplique cada bit pela potência de 2 correspondente à sua posição (começando do 0, da direita para esquerda):
+
+**Exemplo: 1101 em decimal**
+
+```
+Posição:  3   2   1   0
+Bits:     1   1   0   1
+Valores:  8   4   2   1
+
+1×8 + 1×4 + 0×2 + 1×1 = 13
+```
+
+## Números Negativos: Complemento de Dois
+
+Até agora falamos de números sem sinal (**unsigned**). Mas como representar -5 em binário?
+
+A técnica mais usada é o **complemento de dois**. Funciona assim:
+
+1. Escreva o número positivo em binário
+2. Inverta todos os bits (0 vira 1, 1 vira 0)
+3. Some 1
+
+**Exemplo: -5 em 8 bits**
+
+```
+5 em binário:     00000101
+Invertido:        11111010
+Somando 1:        11111011  ← Este é -5
+```
+
+Por que isso funciona? Porque se você somar 5 + (-5) usando essa representação, o resultado é 0 (com um overflow que é ignorado).
+
+**Verificação:**
+
+```
+  00000101  (5)
++ 11111011  (-5)
+-----------
+ 100000000  → descarta o bit extra → 00000000 = 0 ✓
+```
+
+### Implicação Importante
+
+Com 8 bits _com sinal_ (signed), você representa de -128 a +127, não de 0 a 255.
+
+| Tipo         | Bits | Faixa (unsigned) | Faixa (signed)           |
+| ------------ | ---- | ---------------- | ------------------------ |
+| char         | 8    | 0 a 255          | -128 a 127               |
+| short        | 16   | 0 a 65.535       | -32.768 a 32.767         |
+| int (32-bit) | 32   | 0 a ~4 bilhões   | ~-2 bilhões a ~2 bilhões |
+
+Em C, você escolhe entre `unsigned int` e `int` dependendo do que precisa representar.
+
+## Por que Isso Importa na Prática
+
+1. **Overflow**: Se você soma 1 a um `unsigned char` que vale 255, ele "dá a volta" para 0
+2. **Bugs sutis**: Comparar um `int` negativo com um `unsigned int` pode dar resultados inesperados
+3. **Manipulação de bits**: Operações como máscaras, flags e protocolos dependem de entender binário
+
+Quando você escreve `int x = 42;`, o compilador sabe que isso vira `00000000 00000000 00000000 00101010` na memória. Entender isso ajuda a debugar problemas que parecem mágicos — mas nunca são.
+
+---
+
+**Referências:**
+
+- Patterson, D. A., & Hennessy, J. L. (2017). _Computer Organization and Design_. Morgan Kaufmann
+- IEEE 754 Standard for Floating-Point Arithmetic

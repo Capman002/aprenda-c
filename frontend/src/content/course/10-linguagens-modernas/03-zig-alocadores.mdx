@@ -1,0 +1,63 @@
+---
+title: "Alocadores: O Poder do Controle Manual"
+description: "Por que 'malloc' é ruim e como Arenas podem acelerar seu código em 10x."
+difficulty: "Avançado"
+duration: "25 min"
+tags: ["Zig", "Memory", "Allocator", "Arena"]
+order: 4
+---
+
+Em C, usamos `malloc` global. Em Rust, o alocador global é o padrão.
+Em Zig, **não existe alocador global oculto**. Se uma função aloca memória, ela DEVE receber um `Allocator` por parâmetro.
+
+```zig
+// Assinatura honesta: Sei que essa função pode falhar (memória cheia)
+fn concatena(allocator: Allocator, a: []u8, b: []u8) ![]u8 {
+    const result = try allocator.alloc(u8, a.len + b.len);
+    // ... copia ...
+    return result;
+}
+```
+
+## Por que passar alocadores é genial?
+
+Porque você pode escolher a estratégia certa para cada contexto.
+
+### 1. General Purpose Allocator (GPA)
+
+O padrão para Desktop. Detecta leaks, double free e use-after-free em Debug. Lento, mas seguro.
+
+### 2. Fixed Buffer Allocator (Stack/Static)
+
+Hiper-rápido. Usa um array fixo de bytes como "memória ram". Zero syscalls (`sbrk`/`mmap`). Ideal para embarcados críticos.
+
+```zig
+var buffer: [1024]u8 = undefined;
+var fba = std.heap.FixedBufferAllocator.init(&buffer);
+const allocator = fba.allocator();
+
+// Alocações aqui caem direto no buffer da stack!
+const lista = try allocator.alloc(i32, 10);
+```
+
+### 3. Arena Allocator (O Mágico)
+
+Aloca tudo em blocos contínuos. Quando você termina, libera **TUDO de uma vez** (`deinit`).
+
+**Cenário:** Um servidor Web processando uma requisição JSON.
+
+- Parser JSON cria milhares de pequenos nós (tokens, strings).
+- Dar `free` em cada nó é lento e propenso a erro.
+- Com Arena: Dê um `arena.deinit()` no fim da requisição. O custo de free vira O(1).
+
+```zig
+var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+defer arena.deinit(); // Libera TUDO no fim do escopo
+
+const allocator = arena.allocator();
+
+// Faça 1000 alocações... nem se preocupe em liberar individualmente.
+// A arena limpa tudo de uma vez.
+```
+
+Essa técnica é comum em games (Frame Allocator) e compiladores, e o Zig torna ela trivial.

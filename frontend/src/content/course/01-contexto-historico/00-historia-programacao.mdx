@@ -1,0 +1,73 @@
+---
+title: "História da Programação"
+description: "De Ada Lovelace à arquitetura Von Neumann: como chegamos até aqui."
+difficulty: "Iniciante"
+duration: "12 min"
+tags: ["História", "Ada Lovelace", "Von Neumann", "FORTRAN"]
+order: 0
+---
+
+Programar não surgiu com os computadores eletrônicos. O conceito nasceu antes — quando alguém percebeu que era possível descrever uma sequência de operações de forma que uma máquina pudesse executá-las sem intervenção humana a cada passo.
+
+## O Primeiro Algoritmo (1843)
+
+**Ada Lovelace** escreveu o que é considerado o primeiro algoritmo da história em 1843. Ela trabalhava analisando a *Máquina Analítica* de Charles Babbage — um projeto mecânico que nunca foi construído, mas que já continha os conceitos fundamentais de um computador.
+
+O algoritmo de Ada calculava números de Bernoulli e incluía duas ideias que usamos até hoje:
+- **Loops**: Repetir uma sequência de instruções
+- **Condicionais**: Executar passos diferentes dependendo de um resultado
+
+O mais interessante é que Ada percebeu algo que muitos da época não viram: a máquina poderia manipular qualquer tipo de símbolo, não apenas números. Música, texto, padrões — tudo era possível se pudesse ser representado simbolicamente.
+
+> *"A Máquina Analítica tece padrões algébricos assim como o tear de Jacquard tece flores e folhas."*  
+> — Ada Lovelace, 1843
+
+## O Problema do Hardware Fixo
+
+Avance 100 anos. Os primeiros computadores eletrônicos, como o **ENIAC** (1945), eram máquinas de cálculo poderosas, mas tinham um problema prático sério: para mudar o que a máquina fazia, você precisava reconectar cabos físicos.
+
+Imagine ter que abrir o capô do carro e trocar peças toda vez que quisesse mudar de marcha. Era isso.
+
+## A Arquitetura de Von Neumann (1945)
+
+**John von Neumann**, junto com a equipe do projeto EDVAC, propôs uma mudança fundamental: armazenar o programa na mesma memória que os dados.
+
+Parece óbvio hoje, mas foi revolucionário. Antes disso, "programa" e "dados" eram coisas fisicamente separadas. Com essa arquitetura:
+
+1. O programa vira uma sequência de números na memória
+2. A CPU lê esses números e os interpreta como instruções
+3. Para mudar o comportamento, basta carregar outros números
+
+Praticamente todo computador que você usa hoje — do seu celular ao servidor na nuvem — segue esse modelo básico.
+
+## A Escalada das Linguagens
+
+Nos primeiros anos, programar significava escrever **código de máquina**: sequências de números binários que a CPU entendia diretamente. Era eficiente para a máquina, mas inviável para humanos manterem projetos grandes.
+
+A evolução foi gradual:
+
+| Ano | Linguagem | Contribuição |
+|-----|-----------|--------------|
+| 1947 | Assembly | Mnemônicos (`ADD`, `MOV`) em vez de binário puro |
+| 1957 | FORTRAN | Primeira linguagem de alto nível amplamente usada (IBM, John Backus) |
+| 1959 | COBOL | Focada em aplicações comerciais (Grace Hopper) |
+| 1972 | C | Combinou controle de baixo nível com portabilidade (Dennis Ritchie, Bell Labs) |
+
+O **FORTRAN** (FORmula TRANslation) foi criado por John Backus na IBM entre 1954 e 1957. O objetivo era permitir que cientistas escrevessem fórmulas matemáticas de forma legível, e um programa (compilador) traduzia isso para código de máquina. Pela primeira vez, você não precisava saber os detalhes da CPU para escrever um programa útil.
+
+## Por que isso importa para você
+
+Entender essa história não é apenas curiosidade. Ela explica *por que* as coisas são como são:
+
+- **Por que memória e programa ficam juntos?** Arquitetura Von Neumann.
+- **Por que C parece "baixo nível" comparado a Python?** Porque foi criado para escrever sistemas operacionais, onde você precisa de controle fino.
+- **Por que Assembly ainda existe?** Porque às vezes você precisa falar diretamente com o hardware.
+
+Quando você escreve `printf("Hello")` em C, está usando 180 anos de evolução — desde Ada rabiscando algoritmos para uma máquina imaginária até Dennis Ritchie criando uma linguagem que ainda roda em bilhões de dispositivos.
+
+---
+
+**Referências:**
+- Lovelace, A. (1843). *Notes on the Analytical Engine*
+- von Neumann, J. (1945). *First Draft of a Report on the EDVAC*
+- Backus, J. (1978). *The History of FORTRAN I, II, and III*. ACM SIGPLAN Notices

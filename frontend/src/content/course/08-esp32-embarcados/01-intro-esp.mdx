@@ -1,0 +1,279 @@
+---
+title: "Introdução ao ESP32"
+description: "ESP-IDF vs Arduino, ambiente de desenvolvimento e primeiro projeto."
+difficulty: "Intermediário"
+duration: "25 min"
+tags: ["ESP32", "ESP-IDF", "Arduino", "FreeRTOS"]
+order: 1
+---
+
+Você tem um ESP32 em mãos. Agora precisa decidir como programá-lo. Existem duas abordagens principais: **Arduino** (familiar e fácil) e **ESP-IDF** (oficial e completo). A escolha depende do que você quer fazer.
+
+## Arduino Core vs ESP-IDF
+
+| Aspecto              | ESP-IDF             | Arduino               |
+| -------------------- | ------------------- | --------------------- |
+| Curva de aprendizado | Íngreme             | Suave                 |
+| Acesso ao hardware   | Completo e direto   | Através de abstrações |
+| FreeRTOS             | Nativo e integrado  | Suporte limitado      |
+| Novos chips          | Suporte imediato    | Suporte atrasado      |
+| Debug                | JTAG avançado       | Serial básico         |
+| Deep sleep           | Otimizado           | Menos eficiente       |
+| Uso típico           | Produtos comerciais | Protótipos, hobby     |
+
+### Quando Usar Arduino
+
+- Você está aprendendo
+- Projetos rápidos e simples
+- Já conhece a plataforma Arduino
+- Não precisa de recursos avançados
+
+### Quando Usar ESP-IDF
+
+- Produtos comerciais
+- Precisa de performance máxima
+- Quer usar chips mais novos (C3, S3, C6)
+- Precisa de segurança (secure boot, flash encryption)
+- Projetos complexos com múltiplas tasks
+
+## Configurando o Ambiente ESP-IDF
+
+### Opção 1: VS Code + Extensão ESP-IDF (Recomendado)
+
+1. Instale [VS Code](https://code.visualstudio.com/)
+2. Instale a extensão "ESP-IDF"
+3. Use a paleta de comandos: `ESP-IDF: Configure ESP-IDF extension`
+4. Escolha a versão do ESP-IDF (recomendo a mais recente estável)
+5. Aguarde o download e configuração
+
+A extensão gerencia:
+
+- Toolchain de compilação
+- ESP-IDF framework
+- OpenOCD para debug
+- Serial flash tool
+
+### Opção 2: Instalação Manual
+
+```bash
+# Linux/macOS
+mkdir -p ~/esp
+cd ~/esp
+git clone -b v5.2 --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf
+./install.sh
+source export.sh
+
+# Windows: use o ESP-IDF Tools Installer
+```
+
+## Estrutura de um Projeto ESP-IDF
+
+```
+meu-projeto/
+├── CMakeLists.txt       # Build configuration
+├── main/
+│   ├── CMakeLists.txt   # Component config
+│   └── main.c           # Seu código
+├── components/          # Componentes customizados
+├── sdkconfig            # Configurações do projeto
+└── build/               # Artefatos de compilação
+```
+
+### CMakeLists.txt (raiz)
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(meu-projeto)
+```
+
+### main/CMakeLists.txt
+
+```cmake
+idf_component_register(SRCS "main.c"
+                       INCLUDE_DIRS ".")
+```
+
+## Primeiro Projeto: Blink
+
+### main.c
+
+```c
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+
+#define LED_PIN GPIO_NUM_2  // LED onboard na maioria das placas
+
+void app_main(void)
+{
+    // Configura pino como saída
+    gpio_reset_pin(LED_PIN);
+    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
+
+    printf("Iniciando blink...\n");
+
+    while (1) {
+        gpio_set_level(LED_PIN, 1);
+        printf("LED ON\n");
+        vTaskDelay(pdMS_TO_TICKS(500));  // 500ms
+
+        gpio_set_level(LED_PIN, 0);
+        printf("LED OFF\n");
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+```
+
+### Compilar e Flashar
+
+```bash
+# Configurar target (esp32, esp32s2, esp32s3, esp32c3, etc)
+idf.py set-target esp32
+
+# Configurar opções (opcional)
+idf.py menuconfig
+
+# Compilar
+idf.py build
+
+# Flashar (ajuste a porta)
+idf.py -p COM3 flash
+
+# Monitor serial
+idf.py -p COM3 monitor
+```
+
+## FreeRTOS Básico
+
+O ESP-IDF roda sobre FreeRTOS. Isso significa que você pode criar múltiplas **tasks** que rodam "em paralelo" (na verdade, o scheduler alterna entre elas).
+
+### Criando Tasks
+
+```c
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+void tarefa_led(void *pvParameters)
+{
+    while (1) {
+        gpio_set_level(LED_PIN, 1);
+        vTaskDelay(pdMS_TO_TICKS(500));
+        gpio_set_level(LED_PIN, 0);
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+void tarefa_sensor(void *pvParameters)
+{
+    while (1) {
+        // Lê sensor
+        int valor = ler_sensor();
+        printf("Sensor: %d\n", valor);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+void app_main(void)
+{
+    // Cria tasks
+    xTaskCreate(tarefa_led, "led", 2048, NULL, 5, NULL);
+    xTaskCreate(tarefa_sensor, "sensor", 4096, NULL, 5, NULL);
+
+    // app_main pode retornar - as tasks continuam rodando
+}
+```
+
+### Parâmetros de xTaskCreate
+
+```c
+xTaskCreate(
+    tarefa_led,    // Função da task
+    "led",         // Nome (para debug)
+    2048,          // Stack size em bytes
+    NULL,          // Parâmetro para a função
+    5,             // Prioridade (maior = mais prioritário)
+    NULL           // Handle da task (opcional)
+);
+```
+
+### vTaskDelay vs Busy Wait
+
+```c
+// ERRADO: bloqueia a CPU
+while (tempo_nao_chegou()) { }
+
+// CORRETO: libera CPU para outras tasks
+vTaskDelay(pdMS_TO_TICKS(100));
+```
+
+## GPIO: Entrada e Saída
+
+### Configuração Detalhada
+
+```c
+#include "driver/gpio.h"
+
+void configurar_gpio(void)
+{
+    // Configuração de saída
+    gpio_config_t io_conf_out = {
+        .pin_bit_mask = (1ULL << GPIO_NUM_2),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    gpio_config(&io_conf_out);
+
+    // Configuração de entrada com pull-up
+    gpio_config_t io_conf_in = {
+        .pin_bit_mask = (1ULL << GPIO_NUM_0),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_NEGEDGE,  // Interrupção na borda de descida
+    };
+    gpio_config(&io_conf_in);
+}
+```
+
+### Interrupções GPIO
+
+```c
+static void IRAM_ATTR gpio_isr_handler(void *arg)
+{
+    uint32_t gpio_num = (uint32_t)arg;
+    // Não fazer prints aqui! ISR deve ser rápida.
+    // Use queue ou semáforo para notificar uma task.
+}
+
+void configurar_interrupcao(void)
+{
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(GPIO_NUM_0, gpio_isr_handler, (void *)GPIO_NUM_0);
+}
+```
+
+## Próximos Passos
+
+Depois de dominar o básico:
+
+- **WiFi**: `esp_wifi.h`
+- **Bluetooth**: `esp_bt.h`
+- **HTTP Client/Server**: `esp_http_client.h`
+- **MQTT**: `mqtt_client.h`
+- **NVS (storage)**: `nvs_flash.h`
+- **Deep Sleep**: `esp_sleep.h`
+
+A documentação oficial é excelente: [docs.espressif.com](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/)
+
+---
+
+**Referências:**
+
+- Espressif. _ESP-IDF Programming Guide_
+- Espressif. _ESP32 Technical Reference Manual_
+- FreeRTOS. _API Reference_

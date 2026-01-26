@@ -1,0 +1,290 @@
+---
+title: "Ponteiros Avançados"
+description: "void*, ponteiros para funções, const correctness e ponteiros duplos."
+difficulty: "Avançado"
+duration: "25 min"
+tags: ["Ponteiros", "void*", "Callbacks", "const", "C"]
+order: 4
+---
+
+Depois de dominar ponteiros básicos, você encontra casos que exigem técnicas mais sofisticadas: funções genéricas, callbacks, APIs que modificam seus ponteiros
+e garantias de imutabilidade.
+
+## Void Pointers (`void*`)
+
+Um `void*` é um ponteiro genérico — pode apontar para qualquer tipo de dado.
+
+```c
+int x = 42;
+float f = 3.14;
+char c = 'A';
+
+void *ptr;
+
+ptr = &x;  // OK
+ptr = &f;  // OK
+ptr = &c;  // OK
+```
+
+### Limitações
+
+O compilador não sabe o tamanho do tipo apontado, então duas operações são proibidas:
+
+```c
+void *ptr = &x;
+
+*ptr = 10;   // ERRO: dereferência impossível
+ptr++;       // ERRO: aritmética impossível
+```
+
+Para usar o valor, você precisa fazer cast:
+
+```c
+void *ptr = &x;
+int valor = *(int*)ptr;  // Cast para int* e dereferencia
+```
+
+### Caso de Uso: Funções Genéricas
+
+A biblioteca padrão usa `void*` para funções que operam em qualquer tipo:
+
+```c
+// qsort: ordena qualquer tipo de array
+void qsort(void *base, size_t nmemb, size_t size,
+           int (*compar)(const void *, const void *));
+```
+
+Função de comparação para ordenar inteiros:
+
+```c
+int comparar_ints(const void *a, const void *b) {
+    int ia = *(const int*)a;
+    int ib = *(const int*)b;
+    return ia - ib;
+}
+
+int arr[] = {5, 2, 8, 1, 9};
+qsort(arr, 5, sizeof(int), comparar_ints);
+```
+
+O `void*` permite que a mesma função `qsort` ordene ints, floats, structs — qualquer coisa.
+
+## Ponteiros para Funções
+
+Funções têm endereços na memória. Você pode armazenar esse endereço e chamar a função através dele.
+
+### Sintaxe
+
+```c
+// Declaração: ponteiro para função que recebe (int, int) e retorna int
+int (*operacao)(int, int);
+```
+
+Parênteses em `(*operacao)` são essenciais. Sem eles:
+
+- `int *operacao(int, int)` — função que retorna ponteiro para int
+
+### Exemplo Básico
+
+```c
+int soma(int a, int b) { return a + b; }
+int multiplica(int a, int b) { return a * b; }
+
+int main() {
+    int (*op)(int, int);
+
+    op = soma;
+    printf("%d\n", op(3, 4));  // 7
+
+    op = multiplica;
+    printf("%d\n", op(3, 4));  // 12
+
+    return 0;
+}
+```
+
+### Caso de Uso: Callbacks
+
+Callbacks permitem que uma função "chame de volta" código fornecido pelo usuário:
+
+```c
+void processar_lista(int *arr, int n, void (*callback)(int)) {
+    for (int i = 0; i < n; i++) {
+        callback(arr[i]);
+    }
+}
+
+void imprimir(int x) {
+    printf("%d ", x);
+}
+
+void dobrar_e_imprimir(int x) {
+    printf("%d ", x * 2);
+}
+
+int main() {
+    int arr[] = {1, 2, 3, 4, 5};
+
+    processar_lista(arr, 5, imprimir);        // 1 2 3 4 5
+    printf("\n");
+    processar_lista(arr, 5, dobrar_e_imprimir);  // 2 4 6 8 10
+
+    return 0;
+}
+```
+
+### Typedef para Legibilidade
+
+```c
+typedef int (*Comparador)(const void*, const void*);
+
+void ordenar(void *dados, size_t n, size_t tamanho, Comparador cmp);
+```
+
+Muito mais legível que repetir a sintaxe de ponteiro para função.
+
+## Const Correctness
+
+A palavra-chave `const` em ponteiros pode aplicar-se ao dado apontado, ao próprio ponteiro, ou ambos.
+
+### Leia da Direita para Esquerda
+
+| Declaração              | Leitura                                       | Significado                     |
+| ----------------------- | --------------------------------------------- | ------------------------------- |
+| `int *ptr`              | "ptr é ponteiro para int"                     | Tudo mutável                    |
+| `const int *ptr`        | "ptr é ponteiro para int constante"           | Dado imutável, ponteiro mutável |
+| `int * const ptr`       | "ptr é ponteiro constante para int"           | Dado mutável, ponteiro imutável |
+| `const int * const ptr` | "ptr é ponteiro constante para int constante" | Tudo imutável                   |
+
+### Exemplos
+
+```c
+int x = 10, y = 20;
+
+// Ponteiro para const: não pode modificar o dado
+const int *p1 = &x;
+*p1 = 30;    // ERRO: dado é const
+p1 = &y;     // OK: ponteiro pode mudar
+
+// Const ponteiro: não pode mudar para onde aponta
+int * const p2 = &x;
+*p2 = 30;    // OK: dado é mutável
+p2 = &y;     // ERRO: ponteiro é const
+
+// Ambos const
+const int * const p3 = &x;
+*p3 = 30;    // ERRO
+p3 = &y;     // ERRO
+```
+
+### Por que Isso Importa
+
+1. **Documentação**: `const` comunica intenção
+2. **Segurança**: O compilador impede modificações acidentais
+3. **Otimização**: O compilador pode fazer otimizações sabendo que dados não mudam
+
+Funções devem usar `const` quando não modificam seus parâmetros:
+
+```c
+// Indica que a função não modifica a string
+size_t strlen(const char *s);
+
+// Indica que src não é modificado
+void *memcpy(void *dest, const void *src, size_t n);
+```
+
+## Ponteiros Duplos (`**`)
+
+Um ponteiro duplo armazena o endereço de um ponteiro.
+
+```c
+int x = 10;
+int *ptr = &x;
+int **pptr = &ptr;
+
+printf("%d\n", x);       // 10
+printf("%d\n", *ptr);    // 10
+printf("%d\n", **pptr);  // 10
+```
+
+### Caso de Uso 1: Modificar um Ponteiro em Função
+
+Se uma função precisa fazer um ponteiro apontar para outro lugar:
+
+```c
+void alocar(int **ptr) {
+    *ptr = malloc(sizeof(int));
+    **ptr = 42;
+}
+
+int main() {
+    int *p = NULL;
+    alocar(&p);  // Passa endereço do ponteiro
+    printf("%d\n", *p);  // 42
+    free(p);
+    return 0;
+}
+```
+
+Sem o ponteiro duplo, a função só modificaria uma cópia local.
+
+### Caso de Uso 2: Arrays Bidimensionais Dinâmicos
+
+```c
+int **criar_matriz(int linhas, int colunas) {
+    int **matriz = malloc(linhas * sizeof(int*));
+
+    for (int i = 0; i < linhas; i++) {
+        matriz[i] = malloc(colunas * sizeof(int));
+    }
+
+    return matriz;
+}
+
+void liberar_matriz(int **matriz, int linhas) {
+    for (int i = 0; i < linhas; i++) {
+        free(matriz[i]);
+    }
+    free(matriz);
+}
+```
+
+### Caso de Uso 3: Array de Strings
+
+`argv` em `main` é um array de strings, ou seja, array de ponteiros para char:
+
+```c
+int main(int argc, char **argv) {
+    // argv[0] é o nome do programa
+    // argv[1] é o primeiro argumento
+    for (int i = 0; i < argc; i++) {
+        printf("arg[%d] = %s\n", i, argv[i]);
+    }
+    return 0;
+}
+```
+
+`char **argv` é equivalente a `char *argv[]`.
+
+## Resumo Visual
+
+```
+Ponteiro Simples:
+    int *ptr ──────► [ valor int ]
+
+Ponteiro Duplo:
+    int **pptr ──────► int *ptr ──────► [ valor int ]
+
+Ponteiro para Função:
+    int (*fn)(int) ──────► [ código da função ]
+
+void*:
+    void *vp ──────► [ qualquer coisa ] (tamanho desconhecido)
+```
+
+---
+
+**Referências:**
+
+- Kernighan, B. W., & Ritchie, D. M. (1988). _The C Programming Language_, Chapter 5
+- Van der Linden, P. (1994). _Expert C Programming: Deep C Secrets_

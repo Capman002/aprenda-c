@@ -1,0 +1,122 @@
+---
+title: "Configurando o Ambiente"
+description: "Como instalar o compilador, editor e escrever seu primeiro programa em C."
+difficulty: "Iniciante"
+duration: "15 min"
+tags: ["Ambiente", "GCC", "VS Code", "Hello World"]
+order: 0
+---
+
+import Callout from "../../../components/Callout.astro";
+
+Antes de escrever código C, você precisa configurar duas ferramentas essenciais:
+
+1. Um **compilador** (transforma seu código em executável)
+2. Um **editor** (onde você escreve o código)
+
+> Conforme *Linguagem C Completa e Descomplicada* (André Backes), a linguagem C é uma das mais bem-sucedidas já criadas, mas requer um ambiente configurado corretamente para funcionar.
+
+## O Compilador: GCC
+
+O **GCC** (GNU Compiler Collection) é o compilador mais utilizado para C. Ele é gratuito, open-source e funciona em todos os sistemas operacionais.
+
+### Windows
+
+1. Baixe o **MinGW-w64** (que inclui o GCC):
+   - Acesse [mingw-w64.org](https://www.mingw-w64.org/) ou use o instalador via **MSYS2**
+   - Selecione: Arquitetura `x86_64`, Threads `posix`, Exception `seh`
+
+2. Adicione às variáveis de ambiente:
+   - Vá em `Configurações > Sistema > Configurações avançadas do sistema`
+   - Clique em `Variáveis de Ambiente`
+   - Na variável `Path`, adicione: `C:\mingw64\bin` (ajuste o caminho conforme instalação)
+
+3. Reinicie o terminal e verifique:
+   ```bash
+   gcc --version
+   ```
+
+### Linux (Ubuntu/Debian)
+
+```bash
+sudo apt update
+sudo apt install build-essential
+gcc --version
+```
+
+### macOS
+
+```bash
+xcode-select --install
+# ou via Homebrew:
+brew install gcc
+```
+
+## O Editor: VS Code
+
+Para iniciantes, recomendamos o **Visual Studio Code**:
+
+1. Baixe em [code.visualstudio.com](https://code.visualstudio.com/)
+2. Instale a extensão **"C/C++"** da Microsoft
+3. Pronto! Você terá:
+   - Destaque de sintaxe (cores no código)
+   - Autocompletar básico
+   - Terminal integrado
+
+<Callout type="tip" title="Alternativas">
+  Se preferir algo mais leve: **Sublime Text** ou **Notepad++**.
+  Se quiser uma IDE completa: **CLion** (pago) ou **Code::Blocks** (gratuito).
+</Callout>
+
+## Seu Primeiro Programa: Hello World
+
+Crie um arquivo chamado `hello.c` com este conteúdo:
+
+```c
+#include <stdio.h>
+
+int main() {
+    printf("Hello, World!\n");
+    return 0;
+}
+```
+
+**Entendendo o código:**
+
+| Linha | Significado |
+|-------|-------------|
+| `#include <stdio.h>` | Inclui a biblioteca de entrada/saída padrão |
+| `int main()` | Função principal — onde o programa começa |
+| `printf(...)` | Imprime texto na tela |
+| `return 0;` | Indica que o programa terminou com sucesso |
+
+## Compilando e Executando
+
+No terminal, navegue até a pasta do arquivo e execute:
+
+```bash
+# Compilar
+gcc hello.c -o hello
+
+# Executar (Windows)
+hello.exe
+
+# Executar (Linux/macOS)
+./hello
+```
+
+Se tudo funcionou, você verá:
+
+```
+Hello, World!
+```
+
+<Callout type="success" title="Parabéns!">
+  Você acabou de compilar e executar seu primeiro programa em C.
+  A partir de agora, todo código que você escrever seguirá esse fluxo:
+  **Escrever → Compilar → Executar**.
+</Callout>
+
+## Próximos Passos
+
+Agora que seu ambiente está configurado, você está pronto para aprender a **sintaxe básica do C**: variáveis, tipos de dados e operadores.

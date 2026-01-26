@@ -1,0 +1,236 @@
+---
+title: "Zenoh: Comunicação para Edge Computing"
+description: "O protocolo que unifica pub/sub, storage e queries em IoT."
+difficulty: "Avançado"
+duration: "20 min"
+tags: ["Zenoh", "IoT", "Pub/Sub", "Edge Computing", "MQTT"]
+order: 2
+---
+
+MQTT dominou a comunicação IoT por anos. Mas à medida que os sistemas ficam mais complexos — com edge computing, múltiplas nuvens e processamento distribuído — suas limitações aparecem. **Zenoh** foi projetado para resolver essas limitações.
+
+## O que é Zenoh
+
+Zenoh (pronuncia-se "zeno") é um protocolo que unifica três paradigmas em um só:
+
+1. **Data in Motion** — Pub/Sub tradicional (como MQTT)
+2. **Data at Rest** — Storage distribuído (como bancos de dados)
+3. **Computations** — Processamento distribuído (como RPC)
+
+Em vez de ter três sistemas separados, Zenoh oferece uma abstração unificada.
+
+## Por que Zenoh Existe
+
+### Limitações do MQTT
+
+MQTT funciona bem para casos simples:
+
+- Sensores publicam dados
+- Broker centralizado roteia mensagens
+- Clientes assinam tópicos
+
+Problemas aparecem quando você precisa:
+
+- Consultar dados históricos (MQTT é só tempo real)
+- Comunicação peer-to-peer sem broker
+- Redes com alta latência ou intermitência
+- Edge-to-edge sem passar pela nuvem
+- Escala massiva (milhões de dispositivos)
+
+### Zenoh Resolve
+
+| Cenário                 | MQTT                     | Zenoh        |
+| ----------------------- | ------------------------ | ------------ |
+| Pub/Sub tempo real      | ✅                       | ✅           |
+| Queries históricas      | ❌ (precisa DB separado) | ✅ Integrado |
+| Edge-to-edge direto     | ❌ (passa pelo broker)   | ✅ P2P       |
+| Redes não-IP (802.15.4) | ❌                       | ✅           |
+| Overhead                | ~2 bytes mínimo          | 4-6 bytes    |
+| Throughput              | Bom                      | Melhor       |
+
+## Arquitetura
+
+### Key-Value Abstraction
+
+Tudo em Zenoh é um **key-value**. Uma key pode ser:
+
+- `/sensor/temperatura` — valor atual
+- `/sensor/temperatura/**` — todos os valores abaixo
+
+### Primitivas
+
+```
+put(key, value)      # Publica um valor
+get(key) -> values   # Busca valores (pub/sub reverso)
+subscribe(key)       # Recebe atualizações
+queryable(key)       # Responde a queries
+```
+
+### Topologias
+
+Zenoh suporta múltiplas topologias:
+
+**Peer-to-peer**: Dispositivos se comunicam diretamente
+
+```
+[Device A] <---> [Device B] <---> [Device C]
+```
+
+**Routed**: Roteadores otimizam o caminho
+
+```
+[Device] --> [Router] --> [Router] --> [Cloud]
+```
+
+**Híbrido**: Mistura de ambos
+
+```
+[Sensors] --> [Edge Router] <--> [Cloud]
+              |
+              +---> [Local Processing]
+```
+
+## Comparação com MQTT
+
+| Aspecto         | MQTT        | Zenoh                    |
+| --------------- | ----------- | ------------------------ |
+| Modelo          | Pub/Sub     | Pub/Sub + Get/Queryable  |
+| Broker          | Obrigatório | Opcional                 |
+| Persistência    | Via broker  | Distribuída nativamente  |
+| QoS             | 0, 1, 2     | Reliability configurável |
+| Transporte      | TCP         | TCP, UDP, Serial, QUIC   |
+| Overhead mínimo | 2 bytes     | 4-6 bytes                |
+| Latência        | Boa         | Melhor (P2P possível)    |
+
+## Exemplo: Python
+
+```python
+import zenoh
+
+# Abre sessão
+session = zenoh.open()
+
+# Publica
+session.put("sensor/temp", 25.5)
+
+# Subscreve
+def callback(sample):
+    print(f"Recebido: {sample.key_expr} = {sample.payload.deserialize()}")
+
+sub = session.declare_subscriber("sensor/**", callback)
+
+# Query (busca dados)
+replies = session.get("sensor/temp")
+for reply in replies:
+    print(f"Reply: {reply.result.payload.deserialize()}")
+
+# Queryable (responde a queries)
+def query_handler(query):
+    query.reply("sensor/temp", 25.5)
+
+queryable = session.declare_queryable("sensor/temp", query_handler)
+```
+
+## Exemplo: Rust (para Embarcados)
+
+```rust
+use zenoh::prelude::r#async::*;
+
+#[tokio::main]
+async fn main() {
+    let session = zenoh::open(config::default()).res().await.unwrap();
+
+    // Publica
+    session.put("sensor/temp", 25.5).res().await.unwrap();
+
+    // Subscreve
+    let subscriber = session
+        .declare_subscriber("sensor/**")
+        .callback(|sample| {
+            println!("Received: {} = {:?}", sample.key_expr, sample.value);
+        })
+        .res()
+        .await
+        .unwrap();
+}
+```
+
+## Zenoh em Microcontroladores
+
+Zenoh-Pico é a implementação para dispositivos constrained:
+
+```c
+#include "zenoh-pico.h"
+
+int main() {
+    z_owned_config_t config = z_config_default();
+    z_owned_session_t s = z_open(z_move(config));
+
+    // Publica
+    z_put(z_loan(s), z_keyexpr("sensor/temp"),
+          (const uint8_t *)"25.5", 4, NULL);
+
+    z_close(z_move(s));
+    return 0;
+}
+```
+
+Requisitos mínimos:
+
+- ~100 KB Flash
+- ~20 KB RAM
+- Funciona em ESP32, STM32, Zephyr
+
+## Casos de Uso
+
+### Robótica (ROS 2)
+
+Zenoh é backend alternativo para ROS 2, oferecendo:
+
+- Menor latência que DDS padrão
+- Comunicação através de redes (WAN)
+- Bridging entre domínios ROS
+
+### Veículos Autônomos
+
+- Sensores → Edge → Cloud em tempo real
+- Queries para dados históricos de telemetria
+- Comunicação V2V (veículo para veículo)
+
+### IoT Industrial
+
+- Dados de sensores com storage integrado
+- Queries para análise histórica
+- Edge processing sem depender da nuvem
+
+## Quando Usar Zenoh vs MQTT
+
+**Use MQTT quando:**
+
+- Arquitetura simples com broker central
+- Apenas pub/sub em tempo real
+- Ecossistema existente com MQTT
+- Dispositivos muito constrained (< 50KB RAM)
+
+**Use Zenoh quando:**
+
+- Precisa de queries + pub/sub
+- Edge-to-edge sem passar pela nuvem
+- Redes complexas ou híbridas
+- Alta performance é crítica
+- Quer storage distribuído integrado
+
+## Ecossistema
+
+- **Zenoh-Plugin-DDS**: Bridge para ROS 2/DDS
+- **Zenoh-Plugin-MQTT**: Bridge para brokers MQTT
+- **Zenoh-Plugin-REST**: API HTTP
+- **Zenoh-Pico**: Para microcontroladores
+
+---
+
+**Referências:**
+
+- Zenoh Documentation: https://zenoh.io/docs/
+- Eclipse Foundation. _Zenoh Protocol Specification_
+- Julien Enoch. _Zenoh: Zero Overhead Network Protocol_

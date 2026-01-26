@@ -1,0 +1,67 @@
+---
+title: "Fundamentos Hardcore: Git Internals"
+description: "Não decore comandos. Entenda o grafo acíclico dirigido (DAG) e snapshots."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Git", "Internals", "Commits", "Blob"]
+order: 1
+---
+
+Muitos engenheiros usam `git` como uma caixa preta mágica. Se você quer ser Sênior, precisa olhar sob o capô.
+
+## O que é Git, realmente?
+
+Git não armazena diferenças (deltas) como o SVN. Git armazena **Snapshots**.
+É um sistema de arquivos endereçável por conteúdo.
+
+### O Modelo de Dados
+
+Tudo no Git é um objeto identificado por um Hash SHA-1 (40 caracteres).
+
+1.  **Blob (Binary Large Object):** O conteúdo do arquivo. Só o conteúdo. Se dois arquivos têm o mesmo conteúdo, eles apontam para o mesmo blob.
+2.  **Tree:** Representa diretórios. Mapeia nomes de arquivos para Blobs ou outras Trees.
+3.  **Commit:** O snapshot. Aponta para uma Tree raiz, tem metadados (autor, data, mensagem) e aponta para o(s) pai(s).
+
+```text
+Commit (a1b2c)
+ └── Tree (raiz)
+      ├── Blob "main.c" (conteúdo X)
+      └── Tree "lib"
+           └── Blob "utils.c" (conteúdo Y)
+```
+
+## Como fazer um Commit (De verdade)
+
+`git commit` não apenas salva mudanças. Ele cria um novo nó no **Grafo Acíclico Dirigido (DAG)**.
+
+### A Filosofia do Commit Atômico
+
+Um commit deve ser **Atômico**:
+
+1.  **Indivisível:** Se aplicado ou revertido, o sistema continua estável.
+2.  **Uma coisa só:** Não misture refatoração de formatação com correção de bug crítico.
+
+#### Mensagens de Commit (Padrão Kernel/Conventional)
+
+```text
+feat(wifi): implementa reconexão automática com backoff exponencial
+
+Quando o sinal cai, o driver tentava reconectar imediatamente, causando
+congestionamento. Agora usamos um algoritmo de backoff (1s, 2s, 4s...).
+
+Closes #42
+```
+
+1.  **Header:** `<tipo>(<escopo>): <resumo>` (max 50 chars).
+2.  **Body:** O _Porquê_ e o _Como_. Nunca o _O Quê_ (o diff já mostra o quê).
+3.  **Footer:** Referências a issues ou breaking changes.
+
+## Branching: O que é?
+
+Uma branch é apenas um arquivo texto contendo 40 caracteres (o hash do último commit).
+**Criar branch custa O(1)** (41 bytes no disco).
+
+`HEAD` é um ponteiro para a branch atual.
+`git checkout` move o `HEAD`.
+
+Quando você entende que branches são apenas "post-its" colados em commits específicos, o medo de branch desaparece.

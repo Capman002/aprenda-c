@@ -1,0 +1,260 @@
+---
+title: "Introdução ao Rust"
+description: "Safety sem garbage collector — como Rust revolucionou programação de sistemas."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Rust", "Ownership", "Borrow Checker", "Safety"]
+order: 4
+---
+
+Por décadas, programadores de sistemas tiveram que escolher: performance (C/C++) ou safety (Java, Python). Bugs de memória eram inevitáveis em código de baixo nível.
+
+**Rust** quebrou essa dicotomia. É tão rápida quanto C, mas tão segura quanto linguagens com garbage collector. O segredo? Um sistema revolucionário chamado **ownership**.
+
+## O que é Rust
+
+Rust é uma linguagem de programação de sistemas criada por **Graydon Hoare** como projeto pessoal em 2006. A Mozilla adotou o projeto em 2009, e a primeira versão estável (1.0) foi lançada em **maio de 2015**.
+
+Rust foi projetada para ser:
+
+- **Segura** — sem null pointers, sem data races
+- **Rápida** — zero-cost abstractions, sem GC
+- **Concorrente** — fearless concurrency
+- **Prática** — boa tooling, comunidade ativa
+
+## O Problema que Rust Resolve
+
+Em C/C++, bugs de memória são extremamente comuns:
+
+```c
+// Use-after-free
+char *ptr = malloc(100);
+free(ptr);
+printf("%s", ptr);  // Undefined behavior
+
+// Double free
+char *data = malloc(100);
+free(data);
+free(data);  // Corrupção de memória
+
+// Null dereference
+char *str = NULL;
+printf("%c", str[0]);  // Crash
+
+// Buffer overflow
+char buf[10];
+strcpy(buf, "String muito longa");  // Overwrite stack
+```
+
+Esses bugs causam:
+
+- Crashes
+- Vulnerabilidades de segurança
+- Corrupção de dados
+- Comportamento imprevisível
+
+Rust **torna esses erros impossíveis** — o código nem compila.
+
+## Ownership: A Grande Inovação
+
+O sistema de ownership é o coração de Rust. A ideia é simples:
+
+1. Cada valor tem um **dono** (owner)
+2. Só pode haver um dono por vez
+3. Quando o dono sai de escopo, o valor é liberado
+
+```rust
+fn main() {
+    let s1 = String::from("hello");  // s1 é dono
+    let s2 = s1;                      // Ownership movido para s2
+
+    // println!("{}", s1);           // ERRO! s1 não é mais válido
+    println!("{}", s2);              // OK: s2 é o dono
+}  // s2 sai de escopo, memória liberada automaticamente
+```
+
+Não há `free()` explícito. Liberação é determinística e automática.
+
+## Borrowing: Referências Temporárias
+
+E se você quiser usar um valor sem tomar ownership? Use **referências** (borrowing):
+
+```rust
+fn calcular_tamanho(s: &String) -> usize {
+    s.len()  // Pode ler, não pode modificar
+}
+
+fn main() {
+    let s = String::from("hello");
+    let len = calcular_tamanho(&s);  // Empresta referência
+
+    println!("'{}' tem {} caracteres", s, len);  // s ainda é válido!
+}
+```
+
+### Referências Mutáveis
+
+```rust
+fn adicionar_exclamacao(s: &mut String) {
+    s.push_str("!");
+}
+
+fn main() {
+    let mut s = String::from("hello");
+    adicionar_exclamacao(&mut s);
+    println!("{}", s);  // "hello!"
+}
+```
+
+### A Regra de Ouro
+
+Em qualquer momento, você pode ter:
+
+- **Uma** referência mutável (`&mut T`), OU
+- **Várias** referências imutáveis (`&T`)
+
+Nunca ambas. Isso previne data races em compile-time.
+
+```rust
+let mut s = String::from("hello");
+
+let r1 = &s;      // OK: referência imutável
+let r2 = &s;      // OK: outra imutável
+// let r3 = &mut s;  // ERRO! Não pode ter mutável enquanto imutáveis existem
+
+println!("{} {}", r1, r2);  // Usa r1, r2
+// Depois desse ponto, r1 e r2 não são mais usados
+
+let r3 = &mut s;  // OK agora: r1, r2 não estão mais em uso
+r3.push_str("!");
+```
+
+## O Borrow Checker
+
+O **borrow checker** é a parte do compilador que verifica essas regras. Ele analisa o código e garante que:
+
+- Referências não vivem mais que o valor original
+- Não há múltiplas referências mutáveis
+- Referências mutáveis e imutáveis não coexistem
+
+```rust
+fn retorna_referencia() -> &String {  // ERRO!
+    let s = String::from("hello");
+    &s  // s é destruído no fim da função, referência seria inválida
+}
+```
+
+O compilador rejeita isso. Em C, isso seria undefined behavior em runtime.
+
+## Null Safety
+
+Rust não tem null. Em vez disso, usa `Option<T>`:
+
+```rust
+fn encontrar_usuario(id: u32) -> Option<String> {
+    if id == 1 {
+        Some(String::from("Alice"))
+    } else {
+        None
+    }
+}
+
+fn main() {
+    match encontrar_usuario(1) {
+        Some(nome) => println!("Encontrado: {}", nome),
+        None => println!("Usuário não encontrado"),
+    }
+
+    // Ou de forma mais concisa:
+    if let Some(nome) = encontrar_usuario(1) {
+        println!("Encontrado: {}", nome);
+    }
+}
+```
+
+Você é **forçado** a lidar com o caso de ausência de valor. Null pointer dereference é impossível.
+
+## Tratamento de Erros
+
+Similar a null, erros usam tipos:
+
+```rust
+use std::fs::File;
+use std::io::Read;
+
+fn ler_arquivo(path: &str) -> Result<String, std::io::Error> {
+    let mut file = File::open(path)?;  // ? propaga erro
+    let mut conteudo = String::new();
+    file.read_to_string(&mut conteudo)?;
+    Ok(conteudo)
+}
+
+fn main() {
+    match ler_arquivo("dados.txt") {
+        Ok(conteudo) => println!("{}", conteudo),
+        Err(e) => eprintln!("Erro: {}", e),
+    }
+}
+```
+
+## Performance
+
+Rust não tem garbage collector. Não há pausas para GC, não há overhead de runtime.
+
+```rust
+// Zero-cost abstraction: iterators são tão rápidos quanto loops manuais
+let soma: i32 = (1..1000)
+    .filter(|x| x % 2 == 0)
+    .map(|x| x * x)
+    .sum();
+```
+
+O compilador otimiza isso para código tão eficiente quanto um loop for em C.
+
+## Comparação: Rust vs C/C++
+
+| Aspecto              | C/C++     | Rust                    |
+| -------------------- | --------- | ----------------------- |
+| Null pointers        | Possível  | Impossível              |
+| Use-after-free       | Possível  | Impossível              |
+| Data races           | Possível  | Impossível em safe code |
+| Memory leaks         | Possível  | Possível (mas difícil)  |
+| Performance          | Excelente | Excelente               |
+| Curva de aprendizado | Moderada  | Íngreme                 |
+| Compile time         | Rápido    | Lento                   |
+| Ecossistema          | Maduro    | Crescendo rapidamente   |
+
+## Quem Usa Rust
+
+- **Mozilla**: Firefox (Servo, Stylo)
+- **Microsoft**: Partes do Windows
+- **Google**: Android, Fuchsia
+- **Amazon**: Firecracker (VMs serverless)
+- **Discord**: Infraestrutura crítica
+- **Cloudflare**: 20%+ do tráfego da internet
+- **Linux Kernel**: Segundo driver language oficial
+
+## Quando Usar Rust
+
+**Bom para:**
+
+- Sistemas de alta performance
+- Código que precisa ser seguro
+- Ferramentas de linha de comando
+- WebAssembly
+- Sistemas embarcados
+- Substituir C/C++ em projetos novos
+
+**Menos ideal para:**
+
+- Protótipos rápidos
+- Projetos onde compile-time importa muito
+- Equipes sem tempo para aprender ownership
+
+---
+
+**Referências:**
+
+- The Rust Programming Language Book: https://doc.rust-lang.org/book/
+- Klabnik, S., & Nichols, C. (2019). _The Rust Programming Language_
+- Rust by Example: https://doc.rust-lang.org/rust-by-example/

@@ -1,0 +1,87 @@
+---
+title: "Comptime: A Bala de Prata do Zig"
+description: "Metaprogramação em tempo de compilação sem as dores de cabeça de Macros e Templates."
+difficulty: "Avançado"
+duration: "25 min"
+tags: ["Zig", "Comptime", "Generics", "Metaprogramming"]
+order: 3
+---
+
+## Macros C vs Zig Comptime
+
+Em C, macros (`#define`) são copia-e-cola de texto burro.
+Em C++, Templates são uma linguagem Turing-Complete acidental e complexa.
+
+Em Zig, usamos **Código Zig em Tempo de Compilação (`comptime`)**.
+
+### Exemplo: Generics (Sem Syntax Sugar)
+
+Não existe `<T>` em Zig. Existe função que retorna tipo.
+
+```zig
+fn Fila(comptime T: type) type {
+    return struct {
+        items: [10]T,
+        len: usize = 0,
+
+        pub fn push(self: *Fila(T), item: T) void {
+            self.items[self.len] = item;
+            self.len += 1;
+        }
+    };
+}
+
+// Uso
+var fila_int = Fila(i32){};
+fila_int.push(42);
+
+var fila_float = Fila(f32){};
+fila_float.push(3.14);
+```
+
+O compilador gera duas structs diferentes no binário final. É monomorfização manual, mas limpa.
+
+## Reflection em Tempo de Compilação
+
+Você pode iterar sobre campos de uma struct durante a compilação! Perfeito para serialização JSON automática.
+
+```zig
+fn printCampos(x: anytype) void {
+    const T = @TypeOf(x);
+    // @typeInfo retorna metadados do tipo
+    const fields = @typeInfo(T).Struct.fields;
+
+    // "inline for" desenrola o loop na compilação
+    inline for (fields) |field| {
+        const nome = field.name;
+        // @field acessa o valor pelo nome (string)
+        const valor = @field(x, field.name);
+
+        std.debug.print("{s}: {any}\n", .{nome, valor});
+    }
+}
+
+const User = struct { id: u32, nome: []const u8 };
+printCampos(User{ .id = 1, .nome = "Ana" });
+```
+
+### Otimização Agressiva
+
+Se um argumento é `comptime`, o branch é resolvido antes de rodar.
+
+```zig
+fn calcular(comptime op: []const u8, a: i32, b: i32) i32 {
+    if (std.mem.eql(u8, op, "soma")) {
+        return a + b;
+    } else {
+        return a * b;
+    }
+}
+
+// No main:
+// O compilador vê "soma", elimina o "if" e o branch de multiplicação.
+// O código final compilado é apenas uma instrução ADD.
+const res = calcular("soma", 10, 20);
+```
+
+Isso permite criar abstrações de custo zero reais.

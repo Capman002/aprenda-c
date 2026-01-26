@@ -1,0 +1,278 @@
+---
+title: "Funções"
+description: "Organizando código em blocos reutilizáveis com parâmetros e retorno."
+difficulty: "Iniciante"
+duration: "20 min"
+tags: ["C", "Funções", "Escopo", "Parâmetros", "Retorno"]
+order: 2
+---
+
+import Callout from "../../../components/Callout.astro";
+
+Conforme seu programa cresce, você vai notar que repete o mesmo código em vários lugares. **Funções** resolvem isso: você escreve a lógica uma vez e chama quando precisar.
+
+> Conforme *Linguagem C Completa e Descomplicada* (André Backes): "Os comandos da função são executados. Quando a função termina, o programa volta ao ponto em que foi interrompido para continuar sua execução normal."
+
+## Anatomia de uma Função
+
+```c
+tipo_retorno nome_funcao(tipo param1, tipo param2) {
+    // corpo da função
+    return valor;
+}
+```
+
+**Exemplo completo:**
+
+```c
+// Definição da função
+int somar(int a, int b) {
+    int resultado = a + b;
+    return resultado;
+}
+
+int main() {
+    // Chamando a função
+    int total = somar(5, 3);
+    printf("5 + 3 = %d\n", total);  // Imprime: 5 + 3 = 8
+    return 0;
+}
+```
+
+## Parâmetros vs Argumentos
+
+- **Parâmetros**: As variáveis declaradas na definição da função (`int a, int b`)
+- **Argumentos**: Os valores passados na chamada (`5, 3`)
+
+```c
+//        Parâmetros
+//            ↓↓
+int somar(int a, int b) { ... }
+
+//      Argumentos
+//          ↓↓
+somar(5, 3);
+```
+
+## Tipo de Retorno
+
+O tipo antes do nome define o que a função devolve:
+
+```c
+int calcular_idade(int ano_nascimento) {
+    return 2024 - ano_nascimento;  // Retorna um int
+}
+
+float calcular_media(int a, int b) {
+    return (a + b) / 2.0;  // Retorna um float
+}
+```
+
+### Função sem Retorno: `void`
+
+Use `void` quando a função não precisa devolver valor:
+
+```c
+void exibir_mensagem(char *texto) {
+    printf(">>> %s <<<\n", texto);
+    // Sem return (ou "return;" sem valor)
+}
+
+int main() {
+    exibir_mensagem("Olá!");
+    return 0;
+}
+```
+
+## Declaração vs Definição
+
+Em C, o compilador lê de cima para baixo. Se você chamar uma função antes de defini-la, dará erro:
+
+```c
+int main() {
+    somar(5, 3);  // ERRO: 'somar' não foi declarada ainda!
+    return 0;
+}
+
+int somar(int a, int b) { return a + b; }
+```
+
+**Solução 1:** Defina a função antes de usar
+
+```c
+int somar(int a, int b) { return a + b; }
+
+int main() {
+    somar(5, 3);  // OK
+    return 0;
+}
+```
+
+**Solução 2:** Declare um **protótipo** no início
+
+```c
+// Protótipo (promessa que a função existe)
+int somar(int a, int b);
+
+int main() {
+    somar(5, 3);  // OK, compilador confia no protótipo
+    return 0;
+}
+
+// Definição (implementação real)
+int somar(int a, int b) {
+    return a + b;
+}
+```
+
+<Callout type="tip" title="Boa Prática">
+  Em projetos reais, protótipos ficam em arquivos `.h` (headers),
+  e as implementações em arquivos `.c`. Isso será abordado em módulos posteriores.
+</Callout>
+
+## Passagem por Valor
+
+Em C, parâmetros são **copiados**. Modificar o parâmetro dentro da função **não afeta** a variável original:
+
+```c
+void dobrar(int x) {
+    x = x * 2;  // Modifica apenas a CÓPIA
+    printf("Dentro: %d\n", x);
+}
+
+int main() {
+    int numero = 10;
+    dobrar(numero);
+    printf("Fora: %d\n", numero);  // Ainda é 10!
+    return 0;
+}
+```
+
+Saída:
+```
+Dentro: 20
+Fora: 10
+```
+
+Para modificar a variável original, você precisará de **ponteiros** (próximo módulo).
+
+## Escopo de Variáveis
+
+O **escopo** define onde uma variável é visível:
+
+### Variáveis Locais
+
+Existem apenas dentro da função onde foram declaradas:
+
+```c
+void funcao_a() {
+    int x = 10;  // x existe apenas aqui
+}
+
+void funcao_b() {
+    printf("%d", x);  // ERRO: x não existe aqui!
+}
+```
+
+### Variáveis Globais
+
+Declaradas fora de qualquer função, visíveis em todo o arquivo:
+
+```c
+int contador = 0;  // Global
+
+void incrementar() {
+    contador++;  // Acessa a global
+}
+
+int main() {
+    incrementar();
+    incrementar();
+    printf("%d\n", contador);  // Imprime: 2
+    return 0;
+}
+```
+
+<Callout type="warning" title="Evite Globais">
+  Variáveis globais são tentadoras, mas tornam o código difícil de entender e depurar.
+  Prefira passar valores como parâmetros.
+</Callout>
+
+## Exemplo Prático: Calculadora
+
+```c
+#include <stdio.h>
+
+// Protótipos
+float somar(float a, float b);
+float subtrair(float a, float b);
+float multiplicar(float a, float b);
+float dividir(float a, float b);
+void exibir_menu();
+
+int main() {
+    float num1, num2, resultado;
+    int opcao;
+    
+    exibir_menu();
+    scanf("%d", &opcao);
+    
+    printf("Digite dois números: ");
+    scanf("%f %f", &num1, &num2);
+    
+    switch (opcao) {
+        case 1:
+            resultado = somar(num1, num2);
+            break;
+        case 2:
+            resultado = subtrair(num1, num2);
+            break;
+        case 3:
+            resultado = multiplicar(num1, num2);
+            break;
+        case 4:
+            resultado = dividir(num1, num2);
+            break;
+        default:
+            printf("Opção inválida!\n");
+            return 1;
+    }
+    
+    printf("Resultado: %.2f\n", resultado);
+    return 0;
+}
+
+// Implementações
+void exibir_menu() {
+    printf("=== Calculadora ===\n");
+    printf("1. Somar\n");
+    printf("2. Subtrair\n");
+    printf("3. Multiplicar\n");
+    printf("4. Dividir\n");
+    printf("Escolha: ");
+}
+
+float somar(float a, float b) {
+    return a + b;
+}
+
+float subtrair(float a, float b) {
+    return a - b;
+}
+
+float multiplicar(float a, float b) {
+    return a * b;
+}
+
+float dividir(float a, float b) {
+    if (b == 0) {
+        printf("Erro: Divisão por zero!\n");
+        return 0;
+    }
+    return a / b;
+}
+```
+
+## Próximo Passo
+
+Você agora sabe estruturar código em funções. No próximo módulo, vamos mergulhar em **ponteiros e memória** — o recurso mais poderoso (e perigoso) do C.

@@ -1,0 +1,254 @@
+---
+title: "Structs: O Básico"
+description: "Agrupando dados relacionados em um único tipo personalizado."
+difficulty: "Intermediário"
+duration: "18 min"
+tags: ["Structs", "typedef", "C", "Tipos Compostos"]
+order: 0
+---
+
+Até agora trabalhamos com tipos primitivos: `int`, `float`, `char`. Mas dados reais são mais complexos. Uma pessoa tem nome, idade e endereço. Um ponto tem coordenadas x e y. Um pacote de rede tem cabeçalho, payload e checksum.
+
+**Structs** permitem agrupar dados relacionados em um único tipo personalizado.
+
+## Declaração
+
+```c
+struct Ponto {
+    int x;
+    int y;
+};
+```
+
+Isso define um **tipo** chamado `struct Ponto`. Ainda não criamos nenhuma variável — apenas declaramos como ela será estruturada.
+
+Para criar uma variável:
+
+```c
+struct Ponto origem;
+```
+
+## Inicialização
+
+### Na Declaração
+
+```c
+struct Ponto p1 = {10, 20};  // x=10, y=20
+```
+
+Os valores são atribuídos na ordem de declaração dos membros.
+
+### Designadores (C99+)
+
+```c
+struct Ponto p2 = {.y = 30, .x = 15};  // Ordem não importa
+```
+
+Mais legível, especialmente com structs grandes.
+
+### Membro a Membro
+
+```c
+struct Ponto p3;
+p3.x = 5;
+p3.y = 10;
+```
+
+## Acesso a Membros
+
+Use o operador ponto (`.`):
+
+```c
+struct Ponto p = {10, 20};
+
+printf("x = %d\n", p.x);  // 10
+printf("y = %d\n", p.y);  // 20
+
+p.x = 100;  // Modifica o valor
+```
+
+## typedef: Simplificando Nomes
+
+Repetir `struct Ponto` toda vez é verboso. Use `typedef`:
+
+```c
+typedef struct {
+    int x;
+    int y;
+} Ponto;
+
+// Agora você pode usar apenas "Ponto"
+Ponto origem = {0, 0};
+Ponto destino = {100, 200};
+```
+
+Convenção comum: nome da struct em PascalCase.
+
+## Structs em Funções
+
+### Passagem por Valor
+
+```c
+void imprimir(Ponto p) {
+    printf("(%d, %d)\n", p.x, p.y);
+}
+
+Ponto p = {5, 10};
+imprimir(p);  // Passa uma CÓPIA
+```
+
+Modificações dentro da função não afetam o original.
+
+### Passagem por Referência (Ponteiro)
+
+```c
+void mover(Ponto *p, int dx, int dy) {
+    p->x += dx;
+    p->y += dy;
+}
+
+Ponto p = {0, 0};
+mover(&p, 5, 10);  // Passa o ENDEREÇO
+printf("(%d, %d)\n", p.x, p.y);  // (5, 10)
+```
+
+### O Operador Seta (`->`)
+
+Quando você tem um ponteiro para struct, usa `->` em vez de `.`:
+
+```c
+Ponto *ptr = &p;
+
+// Estas duas linhas são equivalentes:
+(*ptr).x = 10;
+ptr->x = 10;  // Mais legível
+```
+
+### Quando Usar Cada Abordagem
+
+| Cenário                    | Recomendação           |
+| -------------------------- | ---------------------- |
+| Struct pequena, só leitura | Por valor              |
+| Struct grande              | Ponteiro (evita cópia) |
+| Precisa modificar          | Ponteiro               |
+
+## Structs Aninhadas
+
+Structs podem conter outras structs:
+
+```c
+typedef struct {
+    char rua[100];
+    int numero;
+    char cidade[50];
+} Endereco;
+
+typedef struct {
+    char nome[100];
+    int idade;
+    Endereco endereco;  // Struct dentro de struct
+} Pessoa;
+
+Pessoa p = {
+    .nome = "Maria",
+    .idade = 30,
+    .endereco = {
+        .rua = "Av. Paulista",
+        .numero = 1000,
+        .cidade = "São Paulo"
+    }
+};
+
+printf("%s mora na %s, %d\n",
+       p.nome,
+       p.endereco.rua,
+       p.endereco.numero);
+```
+
+## Arrays de Structs
+
+```c
+Ponto vertices[3] = {
+    {0, 0},
+    {100, 0},
+    {50, 100}
+};
+
+for (int i = 0; i < 3; i++) {
+    printf("Vértice %d: (%d, %d)\n", i, vertices[i].x, vertices[i].y);
+}
+```
+
+## Exemplo Prático: Inventário
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+typedef struct {
+    char nome[50];
+    int quantidade;
+    float preco;
+} Produto;
+
+void imprimir_produto(const Produto *p) {
+    printf("%-20s | Qtd: %3d | R$ %.2f\n",
+           p->nome, p->quantidade, p->preco);
+}
+
+float valor_total(const Produto *produtos, int n) {
+    float total = 0;
+    for (int i = 0; i < n; i++) {
+        total += produtos[i].quantidade * produtos[i].preco;
+    }
+    return total;
+}
+
+int main() {
+    Produto inventario[] = {
+        {"Caneta", 100, 2.50},
+        {"Caderno", 50, 15.00},
+        {"Borracha", 200, 1.00}
+    };
+    int n = sizeof(inventario) / sizeof(inventario[0]);
+
+    printf("=== Inventário ===\n");
+    for (int i = 0; i < n; i++) {
+        imprimir_produto(&inventario[i]);
+    }
+
+    printf("Valor total: R$ %.2f\n", valor_total(inventario, n));
+
+    return 0;
+}
+```
+
+Output:
+
+```
+=== Inventário ===
+Caneta               | Qtd: 100 | R$ 2.50
+Caderno              | Qtd:  50 | R$ 15.00
+Borracha             | Qtd: 200 | R$ 1.00
+Valor total: R$ 1200.00
+```
+
+## Tamanho e Alinhamento
+
+O tamanho de uma struct pode ser maior que a soma dos membros devido ao **padding** (alinhamento de memória). Isso será detalhado no próximo capítulo.
+
+```c
+struct A {
+    char c;    // 1 byte
+    int i;     // 4 bytes
+};
+
+printf("sizeof(struct A) = %zu\n", sizeof(struct A));  // Provavelmente 8, não 5
+```
+
+---
+
+**Referências:**
+
+- Kernighan, B. W., & Ritchie, D. M. (1988). _The C Programming Language_, Chapter 6
+- King, K. N. (2008). _C Programming: A Modern Approach_, Chapter 16

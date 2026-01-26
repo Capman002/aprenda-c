@@ -1,0 +1,222 @@
+---
+title: "Introdução ao Zig"
+description: "A linguagem que quer ser um C melhor — sem as dores de cabeça."
+difficulty: "Intermediário"
+duration: "18 min"
+tags: ["Zig", "C", "Sistemas", "Comptime"]
+order: 0
+---
+
+C tem mais de 50 anos. Funcionou extraordinariamente bem para seu tempo, mas carrega bagagem: undefined behavior por todo lado, preprocessador arcano, sistema de build fragmentado, e erros que só aparecem em produção.
+
+**Zig** é uma tentativa de criar uma linguagem de sistemas moderna que mantém o que C faz bem — controle de baixo nível, performance, interoperabilidade — enquanto resolve seus problemas.
+
+## O que é Zig
+
+Zig é uma linguagem de programação de sistemas criada por **Andrew Kelley** a partir de 2015. É:
+
+- **Compilada** — gera código nativo
+- **Estaticamente tipada** — erros de tipo em compile-time
+- **Sem garbage collector** — gerenciamento manual de memória
+- **Sem hidden control flow** — se parece sequencial, é sequencial
+
+## Por que Zig Existe
+
+C evoluiu organicamente por décadas. Isso resultou em:
+
+- Undefined behavior em situações comuns
+- Macros do preprocessador são perigosas
+- Sistema de build é um pesadelo (configure, make, cmake, autotools...)
+- Headers vs implementação = duplicação
+- Mensagens de erro incompreensíveis
+
+Zig não é uma evolução de C. É um redesign limpo com os mesmos objetivos.
+
+## Características Principais
+
+### 1. Sem Undefined Behavior Oculto
+
+Em C, `a + b` pode causar undefined behavior se der overflow. Em Zig:
+
+```zig
+const a: u8 = 255;
+const b: u8 = 1;
+const c = a + b;  // Erro de compilação! Overflow detectado
+```
+
+Se você _quer_ overflow (wrapping), seja explícito:
+
+```zig
+const c = a +% b;  // Wrapping addition: c = 0
+```
+
+### 2. Comptime: Execução em Tempo de Compilação
+
+`comptime` é a feature mais poderosa do Zig. Código marcado como `comptime` executa durante a compilação:
+
+```zig
+fn fibonacci(n: u32) u32 {
+    if (n == 0) return 0;
+    if (n == 1) return 1;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+pub fn main() void {
+    // Calculado em compile-time! Nenhum código em runtime.
+    const fib_10 = comptime fibonacci(10);
+    std.debug.print("Fib(10) = {}\n", .{fib_10});
+}
+```
+
+Isso substitui:
+
+- Macros do preprocessador
+- Templates C++
+- Constexpr
+- Geradores de código
+
+### 3. Gerenciamento Manual de Memória Explícito
+
+Zig não esconde onde a memória vem. Alocadores são parâmetros explícitos:
+
+```zig
+fn createArray(allocator: std.mem.Allocator, size: usize) ![]u8 {
+    return try allocator.alloc(u8, size);
+}
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();  // Garante cleanup
+
+    const allocator = gpa.allocator();
+
+    const arr = try createArray(allocator, 100);
+    defer allocator.free(arr);
+
+    // Usa arr...
+}
+```
+
+Por que isso é bom?
+
+- Fica claro o que aloca memória
+- Fácil trocar alocadores (arena, pool, tracking)
+- Testabilidade (injetar alocador de teste)
+
+### 4. Sem Hidden Control Flow
+
+Em C++, `a = b;` pode executar código arbitrário (operador =). Em Zig, se parece atribuição, é atribuição.
+
+```zig
+// O que você vê é o que executa
+const x = foo();
+bar(x);
+```
+
+Não há:
+
+- Operator overloading escondido
+- Construtores/destrutores implícitos
+- Exceções invisíveis
+
+### 5. Tratamento de Erros Explícito
+
+Erros são parte do tipo de retorno, não exceções:
+
+```zig
+const FileError = error{
+    NotFound,
+    PermissionDenied,
+};
+
+fn readFile(path: []const u8) FileError![]u8 {
+    // Retorna erro ou valor
+}
+
+pub fn main() void {
+    const content = readFile("data.txt") catch |err| {
+        switch (err) {
+            error.NotFound => std.debug.print("Não encontrado\n", .{}),
+            error.PermissionDenied => std.debug.print("Sem permissão\n", .{}),
+        }
+        return;
+    };
+
+    // Usa content...
+}
+```
+
+## Zig como Compilador C
+
+Uma das features mais práticas: Zig inclui um compilador C/C++ completo.
+
+```bash
+# Compila C com Zig
+zig cc -o programa programa.c
+
+# Cross-compila para ARM sem configurar nada
+zig cc -target aarch64-linux-gnu programa.c
+```
+
+Por que isso importa:
+
+- Cross-compilation trivial
+- Mesmo toolchain para Zig e C
+- Migração incremental possível
+
+### Importando Headers C
+
+```zig
+const c = @cImport({
+    @cInclude("stdio.h");
+    @cInclude("stdlib.h");
+});
+
+pub fn main() void {
+    _ = c.printf("Hello from Zig!\n");
+}
+```
+
+Zig lê o header C e gera bindings automaticamente. Não precisa de FFI manual.
+
+## Comparação: Zig vs C
+
+| Aspecto            | C                     | Zig                 |
+| ------------------ | --------------------- | ------------------- |
+| Undefined Behavior | Comum                 | Detectado/explícito |
+| Metaprogramação    | Preprocessador        | Comptime            |
+| Generics           | Void\* ou macros      | Comptime types      |
+| Tratamento de erro | Códigos de retorno    | Tipos de erro       |
+| Build system       | Externo (make, cmake) | Integrado           |
+| Cross-compilation  | Configuração complexa | Trivial             |
+| Interop com C      | N/A                   | Perfeita            |
+
+## Quando Usar Zig
+
+**Bom para:**
+
+- Projetos greenfield que usariam C
+- Bibliotecas de performance
+- Sistemas embarcados
+- Ferramentas de build
+- Código que precisa de cross-compilation
+
+**Menos ideal para:**
+
+- Ecossistema de bibliotecas maduro
+- Projetos que já usam Rust com sucesso
+- Equipes sem experiência em sistemas
+
+## Estado Atual
+
+Zig ainda não chegou à versão 1.0. A linguagem muda. Mas já é usada em produção por empresas como Uber (para tooling interno).
+
+O compilador usa LLVM como backend, garantindo otimizações de nível industrial.
+
+---
+
+**Referências:**
+
+- Zig Documentation: https://ziglang.org/documentation/
+- Kelley, A. _Why Zig?_
+- Zig GitHub: https://github.com/ziglang/zig

@@ -1,0 +1,156 @@
+---
+title: "Sistema Hexadecimal"
+description: "Base 16: a notação que programadores usam para não enlouquecer olhando binário."
+difficulty: "Iniciante"
+duration: "12 min"
+tags: ["Hexadecimal", "RGB", "Memória", "Debugging"]
+order: 3
+---
+
+Escrever endereços de memória em binário seria insano. `11111111111111111111111111111111` é ilegível. Em decimal (4.294.967.295) é melhor, mas não tem relação óbvia com os bits.
+
+**Hexadecimal** (base 16) resolve isso. Cada dígito representa exatamente 4 bits, o que significa que 1 byte (8 bits) cabe em exatamente 2 dígitos. Compacto e fácil de converter mentalmente.
+
+## Os 16 Dígitos
+
+Hexadecimal usa os dígitos 0-9 mais as letras A-F:
+
+| Decimal | Hex | Binário |
+| ------- | --- | ------- |
+| 0       | 0   | 0000    |
+| 1       | 1   | 0001    |
+| 2       | 2   | 0010    |
+| 3       | 3   | 0011    |
+| 4       | 4   | 0100    |
+| 5       | 5   | 0101    |
+| 6       | 6   | 0110    |
+| 7       | 7   | 0111    |
+| 8       | 8   | 1000    |
+| 9       | 9   | 1001    |
+| 10      | A   | 1010    |
+| 11      | B   | 1011    |
+| 12      | C   | 1100    |
+| 13      | D   | 1101    |
+| 14      | E   | 1110    |
+| 15      | F   | 1111    |
+
+Memorize essa tabela. Você vai usá-la o tempo todo em debugging, análise de memória e trabalho com protocolos.
+
+## Por que 16?
+
+A escolha não é arbitrária. 16 é uma potência de 2 (2⁴ = 16), o que significa:
+
+- Cada dígito hex mapeia perfeitamente para 4 bits
+- 2 dígitos hex = 1 byte (8 bits)
+- 4 dígitos hex = 16 bits
+- 8 dígitos hex = 32 bits
+
+Isso torna a conversão entre binário e hexadecimal trivial — você só precisa agrupar bits de 4 em 4.
+
+## Conversão: Hexadecimal ↔ Binário
+
+### Hex para Binário
+
+Substitua cada dígito hex pelo seu equivalente de 4 bits:
+
+```
+0xA3 → A = 1010, 3 = 0011 → 10100011
+0xFF → F = 1111, F = 1111 → 11111111
+0x2B → 2 = 0010, B = 1011 → 00101011
+```
+
+### Binário para Hex
+
+Agrupe os bits de 4 em 4 (da direita para a esquerda) e converta:
+
+```
+10101100 → 1010 1100 → A C → 0xAC
+11110000 → 1111 0000 → F 0 → 0xF0
+```
+
+Se os bits não forem múltiplo de 4, complete com zeros à esquerda.
+
+## Notação em Código
+
+Diferentes linguagens indicam hexadecimal de formas diferentes:
+
+| Linguagem    | Notação    | Exemplo   |
+| ------------ | ---------- | --------- |
+| C, C++, Java | `0x`       | `0xFF`    |
+| Python       | `0x`       | `0xff`    |
+| HTML/CSS     | `#`        | `#FF5733` |
+| Assembly     | `h` sufixo | `FFh`     |
+
+## Uso Prático: Cores RGB
+
+Cores na web são representadas como `#RRGGBB`, onde cada par de dígitos hex representa a intensidade de uma cor (0-255):
+
+| Cor      | Hex       | Componentes         |
+| -------- | --------- | ------------------- |
+| Vermelho | `#FF0000` | R=255, G=0, B=0     |
+| Verde    | `#00FF00` | R=0, G=255, B=0     |
+| Azul     | `#0000FF` | R=0, G=0, B=255     |
+| Branco   | `#FFFFFF` | R=255, G=255, B=255 |
+| Preto    | `#000000` | R=0, G=0, B=0       |
+| Laranja  | `#FFA500` | R=255, G=165, B=0   |
+
+`FF` = 255 = máxima intensidade. `00` = 0 = nenhuma intensidade.
+
+## Uso Prático: Endereços de Memória
+
+Quando você vê um crash log ou usa um debugger, endereços aparecem em hexadecimal:
+
+```
+Segmentation fault at 0x00007fff5fbff8e0
+Stack trace:
+  0x0000555555555155: main+0x2c
+  0x00007ffff7a03bf7: __libc_start_main+0xe7
+```
+
+Esses números são endereços de memória. Em sistemas 64-bit, endereços têm 16 dígitos hex (64 bits).
+
+## Uso Prático: Dumps de Memória
+
+Um dump hexadecimal mostra o conteúdo bruto da memória:
+
+```
+0000: 48 65 6C 6C 6F 20 57 6F  72 6C 64 00 00 00 00 00  Hello World.....
+0010: FF FF FF FF 00 00 00 00  01 02 03 04 05 06 07 08  ................
+```
+
+Cada byte é mostrado como 2 dígitos hex. À direita, a representação ASCII (pontos para bytes não-imprimíveis).
+
+Quando você está debugando um buffer overflow ou analisando um protocolo binário, esse formato é essencial.
+
+## Em C
+
+```c
+int x = 0xFF;        // 255 em decimal
+int y = 0x10;        // 16 em decimal
+int z = 0xDEADBEEF;  // Valor "mágico" comum em debugging
+
+printf("%x\n", 255);  // Imprime: ff
+printf("%X\n", 255);  // Imprime: FF
+printf("%02X\n", 15); // Imprime: 0F (com zero à esquerda)
+```
+
+O formato `%x` imprime em minúsculas, `%X` em maiúsculas. O `%02X` garante pelo menos 2 dígitos.
+
+## Dica de Memorização
+
+Os valores que você mais vai ver:
+
+- `0x00` = 0
+- `0xFF` = 255 (todos os bits 1)
+- `0x0F` = 15 (nibble baixo cheio)
+- `0xF0` = 240 (nibble alto cheio)
+- `0x80` = 128 (bit mais significativo ligado)
+
+Com prática, você vai ler `0xDEAD` e saber instantaneamente que é 57005 em decimal — mas mais importante, vai saber que são os bits `1101 1110 1010 1101`.
+
+---
+
+**Referências:**
+
+- Petzold, C. (2000). _Code: The Hidden Language of Computer Hardware and Software_. Microsoft Press
+- Patterson, D. A., & Hennessy, J. L. (2017). _Computer Organization and Design_. Morgan Kaufmann

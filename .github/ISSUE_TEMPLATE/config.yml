@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussões da Comunidade
+    url: https://github.com/Capman002/aprenda-c/discussions
+    about: Tire dúvidas e participe de discussões sobre o conteúdo do curso.
+  - name: Apoie o Projeto
+    url: https://github.com/sponsors/Capman002/
+    about: Considere apoiar o projeto se ele foi útil para você.

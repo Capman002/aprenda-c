@@ -1,0 +1,83 @@
+---
+title: "Origens da Linguagem C"
+description: "Como Dennis Ritchie criou C para reescrever o Unix — e mudou a computação para sempre."
+difficulty: "Iniciante"
+duration: "10 min"
+tags: ["C", "Unix", "Dennis Ritchie", "Bell Labs", "História"]
+order: 1
+---
+
+import YouTube from "../../../components/YouTube.astro";
+
+A linguagem C não surgiu de um projeto acadêmico ou de uma empresa tentando criar "a linguagem do futuro". Ela nasceu de uma necessidade prática: reescrever um sistema operacional de forma que funcionasse em diferentes máquinas sem ter que reescrever tudo do zero.
+
+## O Contexto: Bell Labs, Final dos Anos 1960
+
+**Ken Thompson** estava desenvolvendo o Unix na Bell Labs, inicialmente escrevendo tudo em Assembly para o computador PDP-7 — uma máquina com apenas 8KB de memória. Assembly funcionava, mas tinha um problema: cada vez que você muda de hardware, precisa reescrever quase tudo.
+
+Thompson criou uma linguagem chamada **B** (derivada de BCPL) para facilitar o trabalho. Era melhor que Assembly, mas ainda tinha limitações sérias — especialmente para lidar com tipos de dados e o hardware mais novo que estava chegando (o PDP-11, com arquitetura de 16 bits).
+
+## Dennis Ritchie Entra em Cena (1971-1973)
+
+**Dennis Ritchie**, colega de Thompson na Bell Labs, pegou B e começou a modificá-la. As principais adições:
+
+- **Sistema de tipos**: Em vez de tudo ser "palavra de memória", agora você tinha `int`, `char`, `float` — tipos que mapeavam diretamente para o hardware
+- **Ponteiros com aritmética**: Manipulação direta de endereços de memória com operações matemáticas
+- **Estruturas (structs)**: Agrupar dados relacionados
+
+Em 1973, a linguagem que chamamos de "C moderno" estava essencialmente pronta.
+
+## A Prova de Fogo: Reescrevendo o Unix
+
+No verão de 1973, Ritchie e Thompson fizeram algo que ninguém havia tentado antes em escala séria: **reescreveram o kernel do Unix em C**.
+
+Por que isso foi importante:
+1. **Portabilidade**: O mesmo código-fonte podia ser compilado para máquinas diferentes
+2. **Manutenibilidade**: Muito mais fácil de ler e modificar que Assembly
+3. **Prova de conceito**: Se C era boa o suficiente para escrever um sistema operacional, era boa o suficiente para qualquer coisa
+
+O Unix se espalhou por universidades e empresas. Com ele, foi a linguagem C.
+
+## O Livro que Definiu a Linguagem (1978)
+
+**Brian Kernighan** e Dennis Ritchie publicaram *The C Programming Language* em 1978. Ficou conhecido como "K&R" e se tornou a referência definitiva.
+
+O livro era notável por sua clareza e economia. Ensinava C em menos de 300 páginas, começando com o famoso:
+
+```c
+#include <stdio.h>
+
+main()
+{
+    printf("hello, world\n");
+}
+```
+
+Esse programa aparece na página 6. Direto ao ponto.
+
+## Por que C Ainda é Relevante
+
+Você pode se perguntar: uma linguagem de 1973 ainda importa?
+
+Sim. E muito. Alguns motivos:
+
+| Área | Uso de C |
+|------|----------|
+| **Sistemas Operacionais** | Linux, Windows kernel, macOS kernel — todos escritos em C |
+| **Embarcados** | Microcontroladores, firmware, IoT |
+| **Compiladores** | A maioria dos compiladores é escrita em C ou C++ |
+| **Bancos de Dados** | PostgreSQL, MySQL, SQLite |
+| **Linguagens** | Python, Ruby, PHP — seus interpretadores são escritos em C |
+
+C não é a melhor linguagem para tudo. Ela não tem garbage collection, não tem proteções contra buffer overflow, e deixa você atirar no próprio pé com facilidade. Mas quando você precisa de controle fino sobre o hardware e desempenho previsível, ela continua sendo a escolha padrão.
+
+Como Paul Ceruzzi, historiador de computadores, disse ao *Washington Post*: "Se você tivesse um microscópio e pudesse olhar dentro de um computador, veria o trabalho de Ritchie em todo lugar."
+
+<YouTube id="6mUCcsnCn08" title="A História do Unix e C" />
+
+---
+
+**Referências:**
+- Ritchie, D. M. (1993). *The Development of the C Language*. Bell Labs
+- Kernighan, B. W., & Ritchie, D. M. (1978). *The C Programming Language*. Prentice Hall
+- Ceruzzi, P. (2011). *Computing: A Concise History*. MIT Press

@@ -1,0 +1,45 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import DocLayout from '@layouts/DocLayout.astro';
+
+// 1. Gera as rotas estáticas para TODAS as páginas do curso
+export async function getStaticPaths() {
+  const courseEntries = await getCollection('course');
+  
+  // Sort by Folder (Module) then by Lesson Order to ensure correct sequence
+  const sortedEntries = courseEntries.sort((a, b) => {
+    const [folderA] = a.slug.split('/');
+    const [folderB] = b.slug.split('/');
+    
+    if (folderA !== folderB) {
+      return folderA.localeCompare(folderB);
+    }
+    return a.data.order - b.data.order;
+  });
+  
+  return sortedEntries.map((entry, index) => ({
+    params: { slug: entry.slug }, 
+    props: { 
+      entry,
+      prev: index > 0 ? sortedEntries[index - 1] : undefined,
+      next: index < sortedEntries.length - 1 ? sortedEntries[index + 1] : undefined
+    },
+  }));
+}
+
+// 2. Obtém os dados da página atual
+interface Props {
+  entry: CollectionEntry<'course'>;
+  prev?: CollectionEntry<'course'>;
+  next?: CollectionEntry<'course'>;
+}
+
+import Callout from '../../components/Callout.astro';
+
+const { entry, prev, next } = Astro.props;
+const { Content, headings } = await entry.render();
+---
+
+<DocLayout frontmatter={entry.data} prev={prev} next={next} headings={headings}>
+  <Content components={{ Callout }} />
+</DocLayout>

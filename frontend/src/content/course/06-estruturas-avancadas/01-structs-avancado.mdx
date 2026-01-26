@@ -1,0 +1,271 @@
+---
+title: "Structs Avançados: Memória e Layout"
+description: "Padding, unions, bit-fields e endianness — o que realmente acontece na memória."
+difficulty: "Avançado"
+duration: "25 min"
+tags: ["Structs", "Unions", "Padding", "Endianness", "Bit-fields"]
+order: 1
+---
+
+Quando você declara uma struct, o compilador não simplesmente coloca os membros um após o outro. Ele aplica regras de alinhamento para otimizar o acesso à memória. Entender isso é essencial para sistemas embarcados, protocolos de rede e interoperabilidade.
+
+## Padding e Alinhamento
+
+CPUs acessam memória de forma mais eficiente quando dados estão alinhados a seus tamanhos naturais:
+
+- `int` de 4 bytes deve começar em endereço múltiplo de 4
+- `short` de 2 bytes deve começar em endereço múltiplo de 2
+
+O compilador insere **padding** (bytes não utilizados) para garantir isso.
+
+### Exemplo
+
+```c
+struct Exemplo {
+    char c;     // 1 byte
+    int i;      // 4 bytes
+    short s;    // 2 bytes
+};
+```
+
+Você esperaria 1 + 4 + 2 = 7 bytes? Na realidade:
+
+```
+Offset 0:  [c]          (1 byte)
+Offset 1:  [padding]    (3 bytes para alinhar int)
+Offset 4:  [i i i i]    (4 bytes)
+Offset 8:  [s s]        (2 bytes)
+Offset 10: [padding]    (2 bytes para alinhar struct)
+
+Total: 12 bytes
+```
+
+O padding final garante que arrays de structs também fiquem alinhados.
+
+### Verificando
+
+```c
+#include <stdio.h>
+#include <stddef.h>
+
+struct Exemplo {
+    char c;
+    int i;
+    short s;
+};
+
+int main() {
+    printf("sizeof: %zu\n", sizeof(struct Exemplo));  // 12
+    printf("offset de c: %zu\n", offsetof(struct Exemplo, c));  // 0
+    printf("offset de i: %zu\n", offsetof(struct Exemplo, i));  // 4
+    printf("offset de s: %zu\n", offsetof(struct Exemplo, s));  // 8
+    return 0;
+}
+```
+
+### Otimizando: Reordene os Membros
+
+Ordene do maior para o menor:
+
+```c
+struct Otimizado {
+    int i;      // 4 bytes (offset 0)
+    short s;    // 2 bytes (offset 4)
+    char c;     // 1 byte  (offset 6)
+    // 1 byte padding para alinhar struct
+};
+
+// sizeof: 8 bytes (vs 12 antes)
+```
+
+### Packed Structs
+
+Para eliminar padding (cuidado com performance):
+
+```c
+struct __attribute__((packed)) Compacto {
+    char c;
+    int i;
+    short s;
+};
+// sizeof: 7 bytes
+```
+
+Use apenas quando necessário (protocolos, economia de memória em embarcados).
+
+**Atenção**: Acessos desalinhados podem ser lentos ou causar exceções em algumas arquiteturas (ARM antigo, por exemplo).
+
+## Unions
+
+Uma **union** é como uma struct, mas todos os membros ocupam o **mesmo espaço de memória**. O tamanho da union é o tamanho do maior membro.
+
+```c
+union Dados {
+    int i;      // 4 bytes
+    float f;    // 4 bytes
+    char c[4];  // 4 bytes
+};
+// sizeof: 4 bytes (não 12!)
+```
+
+Apenas um membro pode ser usado por vez — escrever em um sobrescreve os outros.
+
+### Caso de Uso: Interpretar Bytes
+
+```c
+union Conversor {
+    uint32_t inteiro;
+    uint8_t bytes[4];
+};
+
+union Conversor c;
+c.inteiro = 0x12345678;
+
+printf("Byte 0: 0x%02X\n", c.bytes[0]);  // 0x78 em little-endian
+printf("Byte 1: 0x%02X\n", c.bytes[1]);  // 0x56
+printf("Byte 2: 0x%02X\n", c.bytes[2]);  // 0x34
+printf("Byte 3: 0x%02X\n", c.bytes[3]);  // 0x12
+```
+
+### Caso de Uso: Tipos Variantes
+
+```c
+typedef enum { TIPO_INT, TIPO_FLOAT, TIPO_STRING } TipoValor;
+
+typedef struct {
+    TipoValor tipo;
+    union {
+        int i;
+        float f;
+        char str[20];
+    } valor;
+} Variante;
+
+Variante v;
+v.tipo = TIPO_FLOAT;
+v.valor.f = 3.14;
+```
+
+## Bit-Fields
+
+Bit-fields permitem especificar o número exato de bits para cada membro:
+
+```c
+struct Flags {
+    unsigned int ativo   : 1;  // 1 bit
+    unsigned int pronto  : 1;  // 1 bit
+    unsigned int erro    : 1;  // 1 bit
+    unsigned int codigo  : 5;  // 5 bits
+};
+// Apenas 1 byte no total
+```
+
+### Caso de Uso: Registradores de Hardware
+
+```c
+struct GPIO_Config {
+    unsigned int pin      : 4;   // Pino 0-15
+    unsigned int modo     : 2;   // 0=input, 1=output, 2=alternate
+    unsigned int pullup   : 1;   // 0=disable, 1=enable
+    unsigned int velocidade : 2; // 0=low, 1=medium, 2=high
+    unsigned int reservado : 7;  // Padding para 16 bits
+};
+
+volatile struct GPIO_Config *gpio = (struct GPIO_Config *)0x40020000;
+gpio->pin = 5;
+gpio->modo = 1;      // Output
+gpio->pullup = 1;    // Enable
+```
+
+### Limitações
+
+- Ordem dos bits (LSB ou MSB primeiro) depende do compilador
+- Não portável entre arquiteturas
+- Não se pode pegar endereço de um bit-field (`&campo` é erro)
+
+## Endianness
+
+Endianness define a ordem dos bytes em valores multi-byte.
+
+### Little-Endian (Intel x86, ARM, ESP32)
+
+O byte **menos** significativo vem primeiro:
+
+```
+Valor: 0x12345678
+Memória: | 78 | 56 | 34 | 12 |
+          Low           High
+```
+
+### Big-Endian (Network byte order, PowerPC)
+
+O byte **mais** significativo vem primeiro:
+
+```
+Valor: 0x12345678
+Memória: | 12 | 34 | 56 | 78 |
+          High          Low
+```
+
+### Detectando
+
+```c
+int detectar_endianness() {
+    uint16_t x = 0x0001;
+    uint8_t *bytes = (uint8_t *)&x;
+    return bytes[0] == 0x01;  // true = little-endian
+}
+```
+
+### Convertendo para Rede
+
+Protocolos de rede usam big-endian (network byte order). Use funções de conversão:
+
+```c
+#include <arpa/inet.h>
+
+uint32_t host_value = 0x12345678;
+uint32_t network_value = htonl(host_value);  // Host TO Network Long
+uint32_t back = ntohl(network_value);        // Network TO Host Long
+
+// htons/ntohs para 16 bits
+```
+
+### Em Embarcados: Parsing de Protocolos
+
+```c
+// Recebendo pacote big-endian em ESP32 (little-endian)
+struct __attribute__((packed)) Pacote {
+    uint8_t tipo;
+    uint16_t tamanho;  // Big-endian no protocolo!
+    uint32_t timestamp; // Big-endian no protocolo!
+};
+
+void processar(uint8_t *buffer) {
+    struct Pacote *pkt = (struct Pacote *)buffer;
+
+    // Converter para endianness local
+    uint16_t tam = ntohs(pkt->tamanho);
+    uint32_t ts = ntohl(pkt->timestamp);
+
+    printf("Tamanho: %u, Timestamp: %u\n", tam, ts);
+}
+```
+
+## Resumo
+
+| Conceito                  | Uso Principal                             |
+| ------------------------- | ----------------------------------------- |
+| Padding                   | Alinhamento automático pelo compilador    |
+| `__attribute__((packed))` | Eliminar padding (protocolos, economia)   |
+| Unions                    | Tipos variantes, reinterpretação de bytes |
+| Bit-fields                | Economia de bits, registradores de HW     |
+| Endianness                | Interoperabilidade em rede/arquiteturas   |
+
+---
+
+**Referências:**
+
+- Drepper, U. (2007). _What Every Programmer Should Know About Memory_
+- ARM Ltd. _ARM Architecture Reference Manual_
+- Stevens, W. R. (1998). _Unix Network Programming_, Chapter 3

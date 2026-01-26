@@ -1,0 +1,61 @@
+---
+title: "Traits e Polimorfismo"
+description: "Como Rust implementa interfaces e polimorfismo sem Herança de Classes."
+difficulty: "Avançado"
+duration: "30 min"
+tags: ["Rust", "Traits", "OOP", "Polymorphism"]
+order: 4
+---
+
+Rust não tem `class` nem herança (`extends`). Rust tem **Traits** (Traços/Comportamentos).
+É similar às Interfaces do Java/C#, mas mais flexível.
+
+## Definindo um Comportamento
+
+```rust
+trait Falante {
+    fn falar(&self) -> String;
+}
+
+struct Cachorro;
+struct Gato;
+
+impl Falante for Cachorro {
+    fn falar(&self) -> String { "Au Au".to_string() }
+}
+impl Falante for Gato {
+    fn falar(&self) -> String { "Miau".to_string() }
+}
+```
+
+## Static Dispatch (Generics) - Zero Cost
+
+O compilador gera uma versão da função para cada tipo. Performance máxima (igual C++ templates).
+
+```rust
+// T DEVE implementar Falante
+fn fazer_falar<T: Falante>(animal: T) {
+    println!("{}", animal.falar());
+}
+
+// O compilador cria 'fazer_falar_cachorro' e 'fazer_falar_gato' invisivelmente.
+```
+
+## Dynamic Dispatch (Trait Objects) - Flexibilidade
+
+Quando você tem uma lista heterogênea (ex: um vetor de animais variados). Usa `vtable` (igual métodos virtuais C++). Tem um pequeno custo de runtime.
+
+```rust
+// Vec de ponteiros (Box) para QUALQUER coisa que implemente Falante
+let animais: Vec<Box<dyn Falante>> = vec![
+    Box::new(Cachorro),
+    Box::new(Gato),
+];
+
+for a in animais {
+    // Chamada dinâmica
+    println!("{}", a.falar());
+}
+```
+
+Isso permite arquiteturas plugáveis extremamente limpas.

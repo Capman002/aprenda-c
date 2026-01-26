@@ -1,0 +1,236 @@
+---
+title: "Ponteiros: O Básico"
+description: "Endereços, dereferência e o poder de manipular memória diretamente."
+difficulty: "Intermediário"
+duration: "25 min"
+tags: ["Ponteiros", "Memória", "C", "Endereços"]
+order: 1
+---
+
+Ponteiros são provavelmente o conceito que mais assusta iniciantes em C. Também são o recurso mais poderoso da linguagem — e a fonte de muitos bugs quando mal usados.
+
+Um **ponteiro** é uma variável que armazena o endereço de memória de outra variável. Em vez de guardar um valor como `42`, ele guarda algo como `0x7fff5fbff8a0` — a localização na memória onde `42` está guardado.
+
+## Por que Ponteiros Existem
+
+Três razões principais:
+
+1. **Eficiência**: Passar um endereço (8 bytes em 64-bit) é mais barato que copiar uma struct de 1000 bytes
+2. **Modificação**: Funções podem modificar variáveis do chamador
+3. **Estruturas dinâmicas**: Listas ligadas, árvores, grafos — structures cujo tamanho não é conhecido em tempo de compilação
+
+## Declaração e Operadores
+
+### Declarando um Ponteiro
+
+```c
+int *ptr;    // ptr é um ponteiro para int
+char *str;   // str é um ponteiro para char
+float *arr;  // arr é um ponteiro para float
+```
+
+O `*` na declaração diz: "esta variável armazena um endereço, e o dado nesse endereço é do tipo X".
+
+### Operador `&`: Obtendo o Endereço
+
+O operador `&` retorna o endereço de memória de uma variável:
+
+```c
+int x = 42;
+int *ptr = &x;  // ptr agora contém o endereço de x
+
+printf("Valor de x: %d\n", x);         // 42
+printf("Endereço de x: %p\n", &x);     // 0x7fff... (varia)
+printf("Valor de ptr: %p\n", ptr);     // Mesmo endereço
+```
+
+### Operador `*`: Acessando o Valor (Dereferência)
+
+O operador `*` (quando não em declaração) acessa o valor no endereço armazenado:
+
+```c
+int x = 42;
+int *ptr = &x;
+
+printf("Valor apontado: %d\n", *ptr);  // 42
+
+*ptr = 100;  // Modifica x através do ponteiro
+printf("Novo valor de x: %d\n", x);    // 100
+```
+
+## Fluxo Mental
+
+Pense assim:
+
+- `ptr` → "onde está o dado" (endereço)
+- `*ptr` → "qual é o dado" (valor)
+- `&x` → "onde x mora" (endereço de x)
+
+```
+Memória:
+┌─────────────┐
+│ Endereço    │ → 0x1000
+├─────────────┤
+│ Valor: 42   │ ← x mora aqui
+└─────────────┘
+
+ptr contém: 0x1000
+*ptr retorna: 42
+```
+
+## Aritmética de Ponteiros
+
+Quando você soma ou subtrai de um ponteiro, o compilador ajusta pelo tamanho do tipo:
+
+```c
+int arr[] = {10, 20, 30, 40, 50};
+int *ptr = arr;  // Aponta para arr[0]
+
+printf("%d\n", *ptr);       // 10 (arr[0])
+printf("%d\n", *(ptr + 1)); // 20 (arr[1])
+printf("%d\n", *(ptr + 2)); // 30 (arr[2])
+
+ptr++;                      // Avança 4 bytes (sizeof(int))
+printf("%d\n", *ptr);       // 20
+```
+
+Se `ptr` aponta para `int` (4 bytes), `ptr + 1` avança 4 bytes na memória, não 1.
+
+## Ponteiros e Arrays
+
+Em C, arrays e ponteiros estão intimamente relacionados. O nome de um array é, essencialmente, um ponteiro para seu primeiro elemento:
+
+```c
+int arr[5] = {1, 2, 3, 4, 5};
+int *ptr = arr;  // Equivalente a: int *ptr = &arr[0];
+
+// Todas essas expressões são equivalentes:
+arr[2]      // 3
+*(arr + 2)  // 3
+ptr[2]      // 3
+*(ptr + 2)  // 3
+```
+
+A diferença: `arr` é um ponteiro constante (você não pode fazer `arr = outro`), enquanto `ptr` pode ser reatribuído.
+
+## Passagem por Referência
+
+C passa argumentos por valor — a função recebe uma cópia. Para modificar a variável original, passe o endereço:
+
+```c
+// Não funciona: modifica cópias locais
+void trocar_errado(int a, int b) {
+    int temp = a;
+    a = b;
+    b = temp;
+}
+
+// Funciona: modifica através de ponteiros
+void trocar(int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int main() {
+    int x = 5, y = 10;
+
+    trocar_errado(x, y);
+    printf("x=%d, y=%d\n", x, y);  // x=5, y=10 (não mudou)
+
+    trocar(&x, &y);
+    printf("x=%d, y=%d\n", x, y);  // x=10, y=5 (mudou!)
+
+    return 0;
+}
+```
+
+É por isso que `scanf` usa `&`: ele precisa modificar sua variável.
+
+```c
+int idade;
+scanf("%d", &idade);  // Passa o endereço para scanf escrever
+```
+
+## Erros Comuns
+
+### 1. Ponteiro Não Inicializado
+
+```c
+int *ptr;       // ptr contém lixo!
+*ptr = 42;      // CRASH ou corrupção de memória
+```
+
+**Correto:**
+
+```c
+int x;
+int *ptr = &x;  // Agora ptr aponta para algo válido
+*ptr = 42;      // OK
+```
+
+### 2. Dereferenciando NULL
+
+```c
+int *ptr = NULL;
+*ptr = 42;      // CRASH (Segmentation Fault)
+```
+
+**Correto:**
+
+```c
+int *ptr = NULL;
+if (ptr != NULL) {
+    *ptr = 42;
+}
+```
+
+### 3. Retornando Endereço de Variável Local
+
+```c
+int* perigo() {
+    int x = 42;
+    return &x;  // ERRADO: x deixa de existir quando a função retorna!
+}
+
+int main() {
+    int *ptr = perigo();
+    printf("%d\n", *ptr);  // Comportamento indefinido
+}
+```
+
+A variável `x` vive na stack. Quando `perigo()` retorna, aquele espaço é liberado.
+
+### 4. Confundindo Declaração com Uso
+
+```c
+int *ptr;    // Declaração: * indica que ptr é ponteiro
+*ptr = 42;   // Uso: * acessa o valor apontado
+```
+
+Na declaração, `*` é parte do tipo. No uso, `*` é um operador.
+
+## Visualizando
+
+```c
+int x = 42;
+int *ptr = &x;
+```
+
+```
+Nome    │ Endereço │ Valor
+────────┼──────────┼────────
+x       │ 0x1000   │ 42
+ptr     │ 0x1008   │ 0x1000
+```
+
+- `x` está no endereço `0x1000` e contém `42`
+- `ptr` está no endereço `0x1008` e contém `0x1000` (o endereço de x)
+- `*ptr` resolve para o valor em `0x1000`, que é `42`
+
+---
+
+**Referências:**
+
+- Kernighan, B. W., & Ritchie, D. M. (1988). _The C Programming Language_, Chapter 5
+- King, K. N. (2008). _C Programming: A Modern Approach_, Chapter 11

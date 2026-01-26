@@ -1,0 +1,235 @@
+---
+title: "Strings Seguras"
+description: "Como não ser a próxima vítima de buffer overflow."
+difficulty: "Intermediário"
+duration: "18 min"
+tags: ["Strings", "Segurança", "Buffer Overflow", "C"]
+order: 2
+---
+
+Strings em C são arrays de caracteres terminados por `\0`. Simples em conceito, perigosas na prática. A maioria das vulnerabilidades históricas em C envolve manipulação incorreta de strings.
+
+## O Problema com Funções Clássicas
+
+### `strcpy`: Copia Cegamente
+
+```c
+char destino[10];
+strcpy(destino, "Esta string tem mais de 10 caracteres");
+```
+
+`strcpy` não verifica o tamanho do buffer. Ela copia até encontrar `\0`, mesmo que isso signifique escrever além do limite do array.
+
+Resultado: **buffer overflow**. Memória vizinha é sobrescrita. Dependendo do que estava lá, você pode:
+
+- Corromper outras variáveis
+- Crashar o programa
+- Permitir execução de código malicioso
+
+### `gets`: Jamais Use
+
+```c
+char buffer[100];
+gets(buffer);  // Lê input do usuário
+```
+
+`gets` lê até encontrar newline, sem limite. Se o usuário digitar 200 caracteres, todos são escritos no buffer de 100.
+
+**Tão perigosa que foi removida do C11.** Se você ver `gets` em código, substitua imediatamente.
+
+### `sprintf`: Mesmo Problema
+
+```c
+char msg[20];
+sprintf(msg, "Usuário: %s", nome_muito_longo);  // Overflow
+```
+
+## Alternativas Seguras
+
+### `strncpy`: Com Limite
+
+```c
+char destino[10];
+strncpy(destino, origem, sizeof(destino) - 1);
+destino[sizeof(destino) - 1] = '\0';  // SEMPRE adicione manualmente!
+```
+
+**Cuidado**: `strncpy` tem comportamento estranho:
+
+- Se `origem` é menor que `n`, preenche o resto com `\0`
+- Se `origem` é maior ou igual a `n`, **não adiciona `\0`**
+
+Por isso a linha extra garantindo terminação.
+
+### `snprintf`: A Melhor Opção
+
+```c
+char destino[20];
+snprintf(destino, sizeof(destino), "Usuário: %s", nome);
+```
+
+`snprintf` garante:
+
+- Nunca escreve mais que `n-1` caracteres
+- Sempre adiciona `\0` no final
+- Retorna quantos caracteres _teriam sido_ escritos (útil para detectar truncamento)
+
+```c
+int resultado = snprintf(buffer, sizeof(buffer), "Valor: %d", x);
+if (resultado >= sizeof(buffer)) {
+    // String foi truncada!
+}
+```
+
+### `fgets`: Substituindo `gets`
+
+```c
+char buffer[100];
+if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
+    // Remove newline se presente
+    buffer[strcspn(buffer, "\n")] = '\0';
+}
+```
+
+`fgets` lê no máximo `n-1` caracteres e sempre termina com `\0`.
+
+### `strlcpy` e `strlcat` (BSD)
+
+```c
+// Não é padrão C, mas disponível em BSD e muitas libs
+strlcpy(destino, origem, sizeof(destino));
+strlcat(destino, sufixo, sizeof(destino));
+```
+
+Sempre terminam com `\0` e retornam o tamanho total que precisaria (para detectar truncamento).
+
+## Buffer Overflow: O que Acontece
+
+```
+Stack antes do overflow:
+┌────────────────┐
+│ return address │ ← Onde a função volta
+├────────────────┤
+│ saved ebp      │
+├────────────────┤
+│ buffer[10]     │ ← Seu buffer
+└────────────────┘
+
+Após escrever 50 bytes em buffer[10]:
+┌────────────────┐
+│ XXXXXXXXXXXXX  │ ← Return address sobrescrito!
+├────────────────┤
+│ XXXXXXXXXXXXX  │
+├────────────────┤
+│ XXXXXXXXXXXXX  │
+└────────────────┘
+```
+
+Se um atacante controla o input, pode sobrescrever o return address para apontar para código malicioso.
+
+## Boas Práticas
+
+### 1. Sempre Especifique Limites
+
+```c
+// ERRADO
+strcpy(dest, src);
+sprintf(buf, "%s", str);
+
+// CORRETO
+strncpy(dest, src, sizeof(dest) - 1);
+dest[sizeof(dest) - 1] = '\0';
+snprintf(buf, sizeof(buf), "%s", str);
+```
+
+### 2. Valide Antes de Copiar
+
+```c
+if (strlen(origem) < sizeof(destino)) {
+    strcpy(destino, origem);
+} else {
+    // Trate o erro
+}
+```
+
+### 3. Use Alocação Dinâmica para Tamanhos Variáveis
+
+```c
+char *copia = malloc(strlen(original) + 1);
+if (copia != NULL) {
+    strcpy(copia, original);  // Agora é seguro: tamanho exato
+    // ...
+    free(copia);
+}
+```
+
+### 4. Prefira `snprintf` Sempre
+
+É mais versátil e não tem os problemas de `strncpy`:
+
+```c
+// Concatenação segura
+char msg[100] = "";
+snprintf(msg, sizeof(msg), "%s%s%s", parte1, parte2, parte3);
+```
+
+### 5. Compile com Proteções
+
+```bash
+gcc -Wall -Wextra -fstack-protector-all -D_FORTIFY_SOURCE=2 programa.c
+```
+
+- `-fstack-protector-all`: Detecta stack smashing
+- `-D_FORTIFY_SOURCE=2`: Verifica funções de string em tempo de execução
+
+### 6. Use Ferramentas de Análise
+
+- **Valgrind**: Detecta acessos fora do limite
+- **AddressSanitizer** (`-fsanitize=address`): Instrumentação do compilador
+- **Análise estática**: Clang Static Analyzer, Coverity
+
+## Exemplo Completo: Leitura Segura
+
+```c
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#define MAX_NOME 50
+
+int main() {
+    char nome[MAX_NOME];
+
+    printf("Digite seu nome: ");
+
+    // Leitura segura
+    if (fgets(nome, sizeof(nome), stdin) == NULL) {
+        fprintf(stderr, "Erro de leitura\n");
+        return 1;
+    }
+
+    // Remove newline
+    nome[strcspn(nome, "\n")] = '\0';
+
+    // Uso seguro
+    char mensagem[100];
+    int escrito = snprintf(mensagem, sizeof(mensagem),
+                           "Olá, %s! Bem-vindo.", nome);
+
+    if (escrito >= sizeof(mensagem)) {
+        fprintf(stderr, "Aviso: mensagem truncada\n");
+    }
+
+    printf("%s\n", mensagem);
+
+    return 0;
+}
+```
+
+---
+
+**Referências:**
+
+- Seacord, R. C. (2013). _Secure Coding in C and C++_, 2nd Edition
+- CERT C Coding Standard: https://wiki.sei.cmu.edu/confluence/display/c
+- CWE-120: Buffer Copy without Checking Size of Input

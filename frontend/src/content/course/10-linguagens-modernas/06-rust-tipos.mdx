@@ -1,0 +1,80 @@
+---
+title: "Adeus NULL: Option e Result"
+description: "Tratamento de erros funcional, seguro e expressivo com Enums."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Rust", "Error Handling", "Enums", "Pattern Matching"]
+order: 3
+---
+
+Tentar acessar `NULL` custou bilhões de dólares à indústria.
+Em Rust, `null` não existe. Se um valor pode estar ausente, ele é um `Option`.
+
+## Option `<T>`
+
+```rust
+enum Option<T> {
+    Some(T),
+    None,
+}
+```
+
+Você é **obrigado** a tratar o caso `None`. Não dá para "esquecer".
+
+```rust
+let config: Option<String> = carregar_config();
+
+match config {
+    Some(texto) => println!("Config: {}", texto),
+    None => println!("Usando padrão..."),
+}
+```
+
+### Unwrapping Seguro
+
+Use métodos combinadores para evitar `match` verbosos:
+
+- `unwrap_or(padrao)`: Retorna valor ou padrão.
+- `map(|x| ...)`: Transforma o valor se existir, ignora se for None.
+
+## Result `<T, E>`
+
+Para erros recuperáveis (I/O, Parsing).
+
+```rust
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+O operador `?` propaga o erro para cima. É a versão limpa do `if (err != 0) return err;` do C.
+
+```rust
+use std::fs::File;
+use std::io::Read;
+
+fn ler_arquivo_texto() -> Result<String, std::io::Error> {
+    // Se File::open falhar, retorna o Erro AGORA.
+    // Se der certo, 'f' recebe o File.
+    let mut f = File::open("dados.txt")?;
+
+    let mut s = String::new();
+    f.read_to_string(&mut s)?; // O mesmo aqui
+
+    Ok(s) // Retorna Ok com a string no final
+}
+```
+
+## Pattern Matching Poderoso
+
+O `match` do Rust é um switch-case com esteróides. Ele pode desestruturar structs e tuplas.
+
+```rust
+match resposta_http {
+    Result::Ok(200) => println!("Sucesso"),
+    Result::Ok(404) => println!("Não encontrado"),
+    Result::Err(e)  => println!("Falha na conexão: {}", e),
+    _               => println!("Outro código"),
+}
+```

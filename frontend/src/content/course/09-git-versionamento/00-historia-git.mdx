@@ -1,0 +1,145 @@
+---
+title: "História do Git"
+description: "Como Linus Torvalds criou o Git em 2 semanas — e mudou o mundo."
+difficulty: "Iniciante"
+duration: "15 min"
+tags: ["Git", "Linus Torvalds", "Versionamento", "História"]
+order: 0
+---
+
+Antes do Git, o desenvolvimento de software era diferente. Sistemas de controle de versão existiam, mas eram centralizados, lentos, ou proprietários. Git mudou isso — e a história de como surgiu é fascinante.
+
+## O Problema: BitKeeper
+
+Em 2002, o kernel do Linux era um dos maiores projetos de software do mundo. Milhares de desenvolvedores contribuíam código. Linus Torvalds precisava de uma forma de gerenciar isso.
+
+A solução foi o **BitKeeper** — um sistema de controle de versão distribuído comercial. A empresa ofereceu licença gratuita para projetos open-source, e os desenvolvedores do Linux o adotaram.
+
+Mas em **2005**, tudo desmoronou.
+
+Um desenvolvedor fez engenharia reversa do protocolo BitKeeper, violando os termos de licença. A empresa revogou o acesso gratuito. De repente, o maior projeto open-source do mundo estava sem ferramenta de versionamento.
+
+## A Solução: Git
+
+Linus Torvalds tinha duas opções:
+
+1. Pagar pelo BitKeeper
+2. Criar algo novo
+
+Ele escolheu a segunda.
+
+Em **3 de abril de 2005**, Linus começou a escrever o Git. Em **7 de abril**, o projeto era auto-hospedado (usava Git para versionar a si mesmo). Em **16 de abril**, o kernel do Linux fez o primeiro commit usando Git.
+
+**Duas semanas.** Foi o tempo que Linus levou para criar uma ferramenta que revolucionaria o desenvolvimento de software.
+
+## Os Requisitos de Linus
+
+Linus tinha objetivos claros:
+
+1. **Velocidade extrema** — tinha que ser rápido, muito rápido
+2. **Design simples** — complexidade traz bugs
+3. **Suporte a desenvolvimento não-linear** — milhares de branches simultâneos
+4. **Totalmente distribuído** — cada desenvolvedor tem o histórico completo
+5. **Capaz de escalar** — o kernel tem milhões de linhas
+
+## Distribuído vs Centralizado
+
+É aqui que o Git era revolucionário.
+
+### Sistema Centralizado (SVN, CVS)
+
+```
+Servidor Central
+      │
+      ├── Desenvolvedor A (working copy)
+      ├── Desenvolvedor B (working copy)
+      └── Desenvolvedor C (working copy)
+```
+
+- Servidor é ponto único de falha
+- Precisa de conexão para commits
+- Histórico apenas no servidor
+- Branching é lento e pesado
+
+### Sistema Distribuído (Git)
+
+```
+Desenvolvedor A       Desenvolvedor B       Desenvolvedor C
+   (repo completo)       (repo completo)       (repo completo)
+        │                     │                     │
+        └─────────────────────┴─────────────────────┘
+                              │
+                       Servidor (também repo)
+```
+
+- Cada clone é um backup completo
+- Commits são locais, rápidos
+- Trabalha offline
+- Branching é trivial (apenas um ponteiro)
+
+## O Nome "Git"
+
+Linus é famoso por dar nomes com humor autodepreciativo. "Git" é uma gíria britânica para pessoa desagradável. Linus disse:
+
+> "I name all my projects after myself. First Linux, now Git."
+
+O primeiro commit do Git tinha a descrição: "the information manager from hell" (o gerenciador de informações do inferno).
+
+## Mercurial: O Concorrente
+
+Git não estava sozinho. **Matt Mackall** criou o **Mercurial** na mesma época, pelo mesmo motivo. Mercurial era em muitos aspectos similar — e alguns diriam melhor:
+
+- Mais fácil de usar
+- Melhor suporte Windows inicialmente
+- Comandos mais intuitivos
+
+Mas os desenvolvedores do kernel escolheram Git. E onde vai o kernel, vai o resto do mundo open-source.
+
+## GitHub: O Catalisador
+
+Git é a ferramenta. **GitHub** (fundado em 2008) foi o que popularizou.
+
+Antes do GitHub, hospedar seu repositório Git requeria configurar servidor, firewall, permissões. GitHub simplificou: crie conta, faça push, pronto.
+
+O modelo de **pull request** — onde qualquer pessoa pode propor mudanças — democratizou a contribuição open-source. Hoje é impossível imaginar desenvolvimento sem isso.
+
+## A Ironia
+
+Linus manteve o Git por apenas **4 meses**. Depois, entregou o projeto para **Junio Hamano** (que o mantém até hoje no Google).
+
+Para Linus, Git nunca foi "uma coisa importante". Era apenas uma ferramenta que ele precisava para trabalhar no kernel. Uma vez que funcionou bem o suficiente, ele perdeu interesse.
+
+A ferramenta que revolucionou o desenvolvimento de software foi um projeto secundário para seu criador.
+
+## Linha do Tempo
+
+| Data          | Evento                                    |
+| ------------- | ----------------------------------------- |
+| 2002          | Linux adota BitKeeper                     |
+| Abril 2005    | BitKeeper revoga licença                  |
+| 3 abril 2005  | Linus começa Git                          |
+| 7 abril 2005  | Git é auto-hospedado                      |
+| 16 abril 2005 | Primeiro commit do Linux com Git          |
+| Julho 2005    | Linus passa manutenção para Hamano        |
+| 2008          | GitHub é fundado                          |
+| 2018          | Microsoft adquire GitHub por $7.5 bilhões |
+| 2020          | GitHub tem 56+ milhões de desenvolvedores |
+
+## Por que Importa
+
+Git não é apenas uma ferramenta. É a **infraestrutura** do desenvolvimento moderno:
+
+- 95%+ dos projetos usam Git
+- CI/CD assume Git
+- Review de código assume Git
+- Deployment assume Git
+
+Entender Git profundamente — não apenas os comandos básicos — te torna um desenvolvedor melhor.
+
+---
+
+**Referências:**
+
+- Torvalds, L. (2015). _10 Years of Git: An Interview with Git Creator Linus Torvalds_
+- Chacon, S., & Straub, B. (2014). _Pro Git_, 2nd Edition
+- Git SCM. _A Short History of Git_

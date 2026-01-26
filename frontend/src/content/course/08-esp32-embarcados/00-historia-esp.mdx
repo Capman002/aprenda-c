@@ -1,0 +1,142 @@
+---
+title: "História do ESP e da Espressif"
+description: "De startup em Xangai a mais de 1 bilhão de chips IoT."
+difficulty: "Iniciante"
+duration: "12 min"
+tags: ["ESP32", "Espressif", "IoT", "História"]
+order: 0
+---
+
+Se você trabalha com IoT ou sistemas embarcados, provavelmente já usou ou ouviu falar do ESP32. Mas como uma pequena empresa chinesa conseguiu dominar o mercado de microcontroladores WiFi? A história é mais interessante do que você imagina.
+
+## A Fundação da Espressif
+
+A **Espressif Systems** foi fundada em **2008** em Xangai por **Teo Swee Ann**, um engenheiro singapuriano que havia trabalhado anteriormente na Montage Technology. Com formação pela Universidade Nacional de Singapura, Teo começou a empresa como um pequeno consultório de engenharia.
+
+Os primeiros anos foram difíceis. A maioria dos fabricantes de semicondutores não queria trabalhar com uma startup desconhecida com volumes pequenos. A virada veio quando a **TSMC** (Taiwan Semiconductor Manufacturing Company), informada sobre o histórico de Teo, decidiu fornecer suporte para fabricação.
+
+Em 2010, a Espressif estabeleceu seu primeiro centro de P&D em Wuxi, ganhando acesso à expertise manufatureira chinesa.
+
+## A Revolução do ESP8266 (2014)
+
+O primeiro produto comercial significativo foi o ESP8089 em 2013 — um chip WiFi 2.4 GHz que mostrou a capacidade da empresa.
+
+Mas a verdadeira revolução veio em **maio de 2014** com o lançamento do **ESP8266**.
+
+### Por que foi revolucionário?
+
+Antes do ESP8266, adicionar WiFi a um projeto custava dezenas de dólares. O ESP8266 oferecia:
+
+- WiFi 802.11 b/g/n integrado
+- CPU Tensilica de 80 MHz
+- 64KB de RAM para instruções, 96KB para dados
+- GPIO, SPI, I2C, PWM
+- **Preço: menos de $5**
+
+De repente, qualquer maker ou estudante podia conectar projetos à internet. O chip foi adotado massivamente pela comunidade Arduino.
+
+| Especificação | ESP8266                    |
+| ------------- | -------------------------- |
+| CPU           | Tensilica L106 @ 80 MHz    |
+| WiFi          | 802.11 b/g/n               |
+| RAM           | ~160 KB total              |
+| Flash         | Externa (tipicamente 4 MB) |
+| GPIO          | 17 pinos                   |
+| ADC           | 1 (10-bit)                 |
+| Preço         | ~$2-5                      |
+
+## A Chegada do ESP32 (2016)
+
+Em **setembro de 2016**, a Espressif lançou o **ESP32**, um salto geracional:
+
+| Especificação | ESP32                          |
+| ------------- | ------------------------------ |
+| CPU           | Dual-core Xtensa LX6 @ 240 MHz |
+| WiFi          | 802.11 b/g/n                   |
+| Bluetooth     | Classic + BLE 4.2              |
+| RAM           | 520 KB SRAM                    |
+| Flash         | Externa (tipicamente 4-16 MB)  |
+| GPIO          | 34 pinos                       |
+| ADC           | 2 × 12-bit (18 canais)         |
+| DAC           | 2 × 8-bit                      |
+| Extras        | Touch sensors, Hall, RTC       |
+| Preço         | ~$5-10                         |
+
+O ESP32 não era apenas mais potente — ele era **diferente**. Dual-core significava que você podia rodar WiFi em um núcleo e sua aplicação em outro. Bluetooth Classic + BLE abria aplicações de áudio. Os periféricos integrados (touch, hall effect, RTC) reduziam necessidade de componentes externos.
+
+Por **2017**, a Espressif havia atingido **100 milhões de chips enviados**.
+
+## A Família Cresce
+
+A Espressif expandiu a linha para diferentes nichos:
+
+### ESP32-S2 (2020)
+
+- **Single-core** Xtensa LX7 @ 240 MHz
+- Foco em **segurança** (secure boot, flash encryption, RSA-3072)
+- **USB-OTG** nativo (sem chip USB separado!)
+- Sem Bluetooth (reduz custo e consumo)
+- Ideal para: dispositivos USB, aplicações sensíveis a custo
+
+### ESP32-C3 (2020)
+
+- **RISC-V** single-core @ 160 MHz (adeus Xtensa!)
+- WiFi + BLE 5.0
+- ~30% menor consumo que ESP32
+- Menor custo
+- Ideal para: sensores IoT simples, alto volume
+
+### ESP32-S3 (2021)
+
+- **Dual-core** Xtensa LX7 @ 240 MHz
+- WiFi + BLE 5.0
+- **AI acceleration** (instruções vetoriais)
+- **USB-OTG** nativo
+- Até 8 MB PSRAM octal
+- Ideal para: IA na borda, displays, áudio
+
+### ESP32-C6 (2022)
+
+- RISC-V @ 160 MHz
+- **WiFi 6** (802.11ax)
+- BLE 5.0 + Zigbee/Thread
+- Ideal para: Matter, smart home do futuro
+
+### ESP32-H2 (2023)
+
+- RISC-V @ 96 MHz
+- **Sem WiFi** — foco em Zigbee/Thread/BLE
+- Ultra-low power
+- Ideal para: sensores a bateria, redes mesh
+
+## Comparativo Rápido
+
+| Modelo   | CPU             | WiFi       | Bluetooth      | Diferencial           |
+| -------- | --------------- | ---------- | -------------- | --------------------- |
+| ESP8266  | LX106 80MHz     | b/g/n      | ❌             | Menor custo           |
+| ESP32    | Dual LX6 240MHz | b/g/n      | Classic+BLE    | Mais popular          |
+| ESP32-S2 | LX7 240MHz      | b/g/n      | ❌             | USB nativo, segurança |
+| ESP32-C3 | RISC-V 160MHz   | b/g/n      | BLE 5          | Baixo custo, RISC-V   |
+| ESP32-S3 | Dual LX7 240MHz | b/g/n      | BLE 5          | AI, USB, PSRAM        |
+| ESP32-C6 | RISC-V 160MHz   | **WiFi 6** | BLE 5 + Zigbee | Matter-ready          |
+
+## Por que o ESP Domina IoT
+
+1. **Preço agressivo**: WiFi+MCU por menos de $5 mudou o jogo
+2. **Integração completa**: CPU + WiFi + BT + periféricos em um chip
+3. **Ferramentas open-source**: ESP-IDF, Arduino core, MicroPython
+4. **Comunidade massiva**: Milhares de tutoriais, fóruns, bibliotecas
+5. **Suporte ativo**: A Espressif mantém desenvolvimento contínuo
+6. **Escalabilidade**: Do hobby ao produto comercial
+
+Em **setembro de 2023**, a Espressif havia ultrapassado **1 bilhão de chips IoT enviados**. A empresa, que começou em um pequeno escritório em Xangai, agora é líder global em microcontroladores WiFi, com escritórios na China, República Tcheca, Índia, Singapura e Brasil.
+
+Quando você compra uma lâmpada inteligente, uma cafeteira conectada, ou um sensor de temperatura WiFi barato — chances são que tem um chip Espressif dentro.
+
+---
+
+**Referências:**
+
+- Espressif Systems. _Company History and Milestones_
+- Wikipedia. _Espressif Systems_
+- Espressif. _ESP32 Technical Reference Manual_

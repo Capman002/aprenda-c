@@ -1,0 +1,105 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  type?: 'info' | 'warning' | 'error' | 'success'; 
+  title?: string;
+}
+
+const { type = 'info', title } = Astro.props;
+
+const iconMap = {
+  info: 'info',
+  warning: 'alert-triangle',
+  error: 'x-circle',
+  success: 'check-circle'
+} as const;
+---
+
+<div class={`callout ${type}`}>
+  <div class="callout-icon">
+    <Icon name={iconMap[type]} size={20} />
+  </div>
+  <div class="callout-content">
+    {title && <h4 class="callout-title">{title}</h4>}
+    <div class="callout-body">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style>
+  .callout {
+    display: flex;
+    gap: 16px;
+    padding: 16px 20px;
+    margin: 24px 0;
+    border-radius: 8px;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .callout-icon {
+    color: rgb(var(--callout-color));
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .callout-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .callout-title {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgb(var(--callout-color));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Themes */
+  .info {
+    --callout-color: 50, 145, 255; /* Blue */
+    background: rgba(50, 145, 255, 0.05); /* Very subtle bg */
+    border-color: rgba(50, 145, 255, 0.2);
+  }
+
+  .warning {
+    --callout-color: 245, 166, 35; /* Orange */
+    background: rgba(245, 166, 35, 0.05);
+    border-color: rgba(245, 166, 35, 0.2);
+  }
+
+  .error {
+    --callout-color: 255, 50, 50; /* Red */
+    background: rgba(255, 50, 50, 0.05);
+    border-color: rgba(255, 50, 50, 0.2);
+  }
+
+  .success {
+    --callout-color: 39, 226, 164; /* Green */
+    background: rgba(39, 226, 164, 0.05);
+    border-color: rgba(39, 226, 164, 0.2);
+  }
+  
+  /* Text Styles inside Callout */
+  :global(.callout-body p) {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #dedede; /* Slightly lighter than secondary */
+  }
+  
+  :global(.callout-body p + p) {
+    margin-top: 12px;
+  }
+  
+  :global(.callout-body code) {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+</style>

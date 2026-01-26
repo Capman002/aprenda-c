@@ -1,0 +1,211 @@
+---
+import Icon from './Icon.astro';
+
+const modules = [
+  {
+    id: '00',
+    title: 'História',
+    path: '/historia',
+    icon: 'book-open',
+    topics: [
+      { title: 'História da Programação', path: '/historia/historia-programacao' },
+      { title: 'Origens do C', path: '/historia/c-origens' },
+      { title: 'Máquinas e MCUs', path: '/historia/maquinas-mcus' },
+      { title: 'A Revolução ESP', path: '/historia/historia-esp' },
+      { title: 'A Revolução do Git', path: '/historia/historia-git' },
+      { title: 'A Era do GitHub', path: '/historia/historia-github' },
+    ],
+  },
+  {
+    id: '01',
+    title: 'Fundamentos',
+    path: '/fundamentos',
+    icon: 'book-open',
+    topics: [
+      { title: 'Representacao Binaria', path: '/fundamentos/binario' },
+      { title: 'Arquitetura de Processadores', path: '/fundamentos/processadores' },
+      { title: 'Memoria e Stack', path: '/fundamentos/memoria' },
+      { title: 'Sistemas de Numeracao', path: '/fundamentos/numeracao' },
+    ],
+  },
+  {
+    id: '02',
+    title: 'Linguagem C',
+    path: '/linguagem-c',
+    icon: 'cpu',
+    topics: [
+      { title: 'Tipos e Variaveis', path: '/linguagem-c/tipos' },
+      { title: 'Ponteiros', path: '/linguagem-c/ponteiros' },
+      { title: 'Structs e Unions', path: '/linguagem-c/structs' },
+      { title: 'Manipulacao de Bits', path: '/linguagem-c/bits' },
+    ],
+  },
+  {
+    id: '03',
+    title: 'Hardware',
+    path: '/hardware',
+    icon: 'hard-drive',
+    topics: [
+      { title: 'GPIO', path: '/hardware/gpio' },
+      { title: 'PWM', path: '/hardware/pwm' },
+      { title: 'UART', path: '/hardware/uart' },
+      { title: 'I2C e SPI', path: '/hardware/i2c-spi' },
+    ],
+  },
+  {
+    id: '04',
+    title: 'Sensores',
+    path: '/sensores',
+    icon: 'gauge',
+    topics: [
+      { title: 'Distancia', path: '/sensores/distancia' },
+      { title: 'IMU', path: '/sensores/imu' },
+      { title: 'Motores DC', path: '/sensores/motores' },
+      { title: 'Servos', path: '/sensores/servos' },
+    ],
+  },
+  {
+    id: '05',
+    title: 'Controle PID',
+    path: '/controle',
+    icon: 'navigation',
+    topics: [
+      { title: 'Teoria', path: '/controle/teoria' },
+      { title: 'Implementacao', path: '/controle/implementacao' },
+      { title: 'Tunning', path: '/controle/tunning' },
+    ],
+  },
+  {
+    id: '06',
+    title: 'Projetos',
+    path: '/projetos',
+    icon: 'wrench',
+    topics: [
+      { title: 'Seguidor de Linha', path: '/projetos/seguidor' },
+      { title: 'Braco Robotico', path: '/projetos/braco' },
+    ],
+  },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<aside class="sidebar">
+  <div class="brand">
+    <Icon name="box" size={24} />
+    <span>Programacao</span>
+  </div>
+  
+  <nav class="nav">
+    <a href="/" class:list={['nav-item', 'nav-home', { active: currentPath === '/' }]}>
+      <Icon name="home" size={18} />
+      <span>Inicio</span>
+    </a>
+
+    {modules.map((mod) => {
+      const isActive = currentPath.startsWith(mod.path);
+      return (
+        <div class="module">
+          <a href={mod.path} class:list={['nav-item', 'module-header', { active: isActive }]}>
+            <Icon name={mod.icon as any} size={18} />
+            <span class="module-title">{mod.id}. {mod.title}</span>
+            {isActive ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}
+          </a>
+          {isActive && (
+            <div class="topics">
+              {mod.topics.map((topic) => (
+                <a 
+                  href={topic.path} 
+                  class:list={['nav-item', 'topic', { active: currentPath === topic.path }]}
+                >
+                  {topic.title}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </nav>
+</aside>
+
+<style>
+  .sidebar {
+    width: 260px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    text-decoration: none;
+  }
+
+  .nav-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .nav-item.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .nav-home {
+    margin-bottom: 8px;
+  }
+
+  .module {
+    margin-bottom: 2px;
+  }
+
+  .module-header {
+    justify-content: flex-start;
+  }
+
+  .module-title {
+    flex: 1;
+  }
+
+  .topics {
+    padding-left: 20px;
+    margin-left: 14px;
+    border-left: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .topic {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+</style>

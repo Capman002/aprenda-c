@@ -1,0 +1,176 @@
+---
+title: "Variáveis e Tipos de Dados"
+description: "Declarando variáveis, tipos primitivos e operadores aritméticos em C."
+difficulty: "Iniciante"
+duration: "20 min"
+tags: ["C", "Variáveis", "Tipos", "Operadores"]
+order: 0
+---
+
+import Callout from "../../../components/Callout.astro";
+
+Uma variável é uma **caixa de memória com nome** que guarda um valor. Em C, toda variável precisa ter um **tipo** definido antes de ser usada.
+
+> Conforme *Linguagem C Completa e Descomplicada* (André Backes): "Uma variável deve ser sempre declarada antes de ser usada dentro do programa."
+
+## Declarando Variáveis
+
+A sintaxe básica é:
+
+```c
+tipo nome_da_variavel = valor_inicial;
+```
+
+Exemplos:
+
+```c
+int idade = 25;           // Número inteiro
+float temperatura = 36.5; // Número decimal
+char letra = 'A';         // Um caractere
+```
+
+<Callout type="warning" title="Atenção">
+  Em C, você **deve** declarar o tipo da variável. Diferente de Python ou JavaScript,
+  C é uma linguagem **estaticamente tipada**.
+</Callout>
+
+## Tipos Primitivos
+
+O C possui 4 tipos fundamentais:
+
+| Tipo | Descrição | Tamanho Típico | Exemplo |
+|------|-----------|----------------|---------|
+| `int` | Números inteiros | 4 bytes | `42`, `-7`, `0` |
+| `float` | Decimais (7 dígitos de precisão) | 4 bytes | `3.14f`, `-0.5f` |
+| `double` | Decimais (15 dígitos de precisão) | 8 bytes | `3.14159265359` |
+| `char` | Um caractere ASCII | 1 byte | `'A'`, `'7'`, `'\n'` |
+
+### Modificadores de Tipo
+
+Você pode modificar `int` para controlar tamanho e sinal:
+
+```c
+short int pequeno = 100;       // Pelo menos 2 bytes
+long int grande = 1000000L;    // Pelo menos 4 bytes
+unsigned int positivo = 42;    // Apenas valores >= 0
+```
+
+## Nomes de Variáveis (Identificadores)
+
+Regras obrigatórias:
+- Começam com letra ou `_` (nunca número)
+- Contêm apenas letras, números e `_`
+- **Case-sensitive**: `idade` ≠ `Idade` ≠ `IDADE`
+- Não podem ser palavras reservadas (`int`, `return`, `if`, etc.)
+
+```c
+// ✅ Válidos
+int sensorValue;
+float _temperatura;
+char nome_usuario;
+
+// ❌ Inválidos
+int 2sensor;    // Começa com número
+float meu-valor; // Hífen não permitido
+char return;    // Palavra reservada
+```
+
+## Operadores Aritméticos
+
+| Operador | Operação | Exemplo |
+|----------|----------|---------|
+| `+` | Adição | `5 + 3` → `8` |
+| `-` | Subtração | `5 - 3` → `2` |
+| `*` | Multiplicação | `5 * 3` → `15` |
+| `/` | Divisão | `5 / 3` → `1` (inteiro!) |
+| `%` | Resto (módulo) | `5 % 3` → `2` |
+
+<Callout type="error" title="Divisão entre Inteiros">
+  Cuidado! `5 / 3` resulta em `1`, não `1.666...`
+  
+  Para obter decimais, pelo menos um operando deve ser `float` ou `double`:
+  ```c
+  float resultado = 5.0 / 3.0; // 1.666667
+  ```
+</Callout>
+
+## Operadores de Atribuição
+
+O `=` atribui valor, não compara igualdade.
+
+```c
+int x = 10;   // x recebe 10
+x = x + 5;    // x recebe 15
+x += 5;       // Atalho: x = x + 5
+x++;          // Atalho: x = x + 1
+```
+
+| Atalho | Equivalente |
+|--------|-------------|
+| `x += y` | `x = x + y` |
+| `x -= y` | `x = x - y` |
+| `x *= y` | `x = x * y` |
+| `x /= y` | `x = x / y` |
+| `x++` | `x = x + 1` |
+| `x--` | `x = x - 1` |
+
+## Exemplo Prático
+
+```c
+#include <stdio.h>
+
+int main() {
+    // Declaração de variáveis
+    int idade = 20;
+    float altura = 1.75;
+    char inicial = 'J';
+    
+    // Cálculo simples
+    int ano_nascimento = 2024 - idade;
+    
+    // Exibindo valores
+    printf("Inicial: %c\n", inicial);
+    printf("Idade: %d anos\n", idade);
+    printf("Altura: %.2f metros\n", altura);
+    printf("Nasceu em: %d\n", ano_nascimento);
+    
+    return 0;
+}
+```
+
+**Códigos de Formato no `printf`:**
+
+| Código | Tipo |
+|--------|------|
+| `%d` | `int` |
+| `%f` | `float` / `double` |
+| `%.2f` | Float com 2 casas decimais |
+| `%c` | `char` |
+| `%s` | String (veremos depois) |
+
+## Lendo do Teclado com `scanf`
+
+```c
+#include <stdio.h>
+
+int main() {
+    int idade;
+    
+    printf("Digite sua idade: ");
+    scanf("%d", &idade);  // O & é obrigatório!
+    
+    printf("Você tem %d anos.\n", idade);
+    
+    return 0;
+}
+```
+
+<Callout type="warning" title="O & no scanf">
+  O `&` antes da variável é o **operador de endereço**. Ele passa a *localização*
+  da variável para o `scanf` poder escrever nela. Esquecer o `&` é um erro comum
+  que causa comportamento imprevisível.
+</Callout>
+
+## Próximo Passo
+
+Agora que você sabe declarar variáveis e fazer cálculos, vamos aprender a **tomar decisões** no código com `if`, `else` e `switch`.

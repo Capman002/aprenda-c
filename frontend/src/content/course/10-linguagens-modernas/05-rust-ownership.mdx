@@ -1,0 +1,74 @@
+---
+title: "Ownership e Borrowing: O Coração do Rust"
+description: "Entendendo as regras que tornam o Garbage Collector obsoleto."
+difficulty: "Avançado"
+duration: "35 min"
+tags: ["Rust", "Ownership", "Memory Safety"]
+order: 2
+---
+
+Em linguagens como Python/JS, o Garbage Collector pausa seu programa para limpar o lixo.
+Em C/C++, você limpa manualmente (e erra, causando crashes).
+Em Rust, o compilador insere os `free()` para você nos lugares certos. Como? **Ownership**.
+
+## As 3 Leis de Ownership
+
+1.  Cada valor em Rust tem um **Dono** (variável).
+2.  Só pode haver **um** dono por vez.
+3.  Quando o dono sai de escopo, o valor é descartado (Drop).
+
+### Move Semantics
+
+```rust
+let s1 = String::from("Ola");
+let s2 = s1;
+
+// println!("{}", s1); // ERRO!
+```
+
+Em C++, `s2 = s1` faria uma cópia rasa (shallow copy), e ambos apontariam para a mesma memória. Se ambos derem `free`, temos double-free.
+Em Rust, `s1` foi **MOVIDO** para `s2`. `s1` agora é inválido. O problema do double-free desaparece.
+
+## Borrowing: Emprestando sem dar
+
+Se tivéssemos que mover tudo o tempo todo, seria chato. Podemos **emprestar** (`&` Reference).
+
+### Shared References (`&T`)
+
+Podem haver VÁRIAS referências de leitura. Ninguém pode alterar o dado enquanto ele está sendo lido.
+
+```rust
+let s = String::from("Texto");
+let r1 = &s; // Ok
+let r2 = &s; // Ok, leitores múltiplos.
+```
+
+### Mutable References (`&mut T`)
+
+Só pode haver **UMA** referência mutável. E nenhuma outra (nem leitura, nem escrita) ao mesmo tempo.
+
+```rust
+let mut s = String::from("Texto");
+let r1 = &mut s;
+// let r2 = &mut s; // ERRO: Data Race evitado na compilação!
+// let r3 = &s;     // ERRO: Não pode ler enquanto alguém edita.
+```
+
+Isso elimina **Data Races** matematicamente. Se compila, é thread-safe (na maioria dos casos).
+
+## Lifetimes (O Pesadelo dos Iniciantes)
+
+O compilador precisa garantir que uma referência não viva mais que o dado original (Dangling Pointer).
+
+```rust
+fn main() {
+    let r;
+    {
+        let x = 5;
+        r = &x;
+    } // x morre aqui.
+    // println!("{}", r); // ERRO: r aponta para cadáver de x.
+}
+```
+
+Normalmente o compilador infere isso. Quando não consegue, você precisa anotar `'a`.

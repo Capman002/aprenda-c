@@ -1,0 +1,88 @@
+---
+title: "O Sistema de Build do Zig"
+description: "Por que você nunca mais vai querer escrever um Makefile na vida."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Zig", "Build System", "Cross-Compilation"]
+order: 2
+---
+
+Makefiles são frágeis. CMake é uma linguagem horrível. O Zig traz uma proposta diferente: **O script de build é um programa Zig.**
+
+Isso significa que você tem variáveis, loops, tipos e acesso à biblioteca padrão do Zig para compilar seu projeto.
+
+## Estrutura do `build.zig`
+
+Todo projeto Zig tem uma função `pub fn build(b: *std.Build) void` que define o grafo de dependências.
+
+### Compilando C e C++
+
+O Zig não é ciumento. Ele ama C.
+
+```zig
+const exe = b.addExecutable(.{
+    .name = "meu-firmware",
+    .root_source_file = .{ .path = "src/main.zig" },
+    .target = target,
+    .optimize = optimize, // ReleaseSafe, ReleaseFast, Debug
+});
+
+// Adicionando arquivos C existentes
+exe.addCSourceFiles(&.{
+    "src/hal/uart.c",
+    "src/hal/gpio.c",
+}, &.{ "-Wall", "-Wextra" }); // Flags do GCC/Clang
+
+// Adicionando Include Directories
+exe.addIncludePath(.{ .path = "src/hal/include" });
+
+// Linkando a LibC (se necessário)
+exe.linkLibC();
+```
+
+## Cross-Compilation Trivial
+
+Em C, cross-compilar (do Linux x86 para Raspberry Pi ARM) exige instalar toolchains complexos (`sudo apt install gcc-arm-linux-gnueabihf`...).
+
+No Zig, a toolchain **já está inclusa**.
+
+```bash
+# Compilar para Windows 64-bit (estando no Linux!)
+zig build -Dtarget=x86_64-windows
+
+# Compilar para Raspberry Pi (ARM64 Linux)
+zig build -Dtarget=aarch64-linux
+
+# Compilar para ESP32 (RISC-V) - Experimental
+zig build -Dtarget=riscv32-freestanding
+```
+
+O Zig baixa a `libc` da plataforma alvo automaticamente se necessário. É mágica.
+
+## Gestão de Dependências (`build.zig.zon`)
+
+Similar ao `package.json` (Node) ou `Cargo.toml` (Rust), o Zig usa o arquivo ZON (Zig Object Notation).
+
+```zig
+// build.zig.zon
+.{
+    .name = "meu-projeto",
+    .version = "0.1.0",
+    .dependencies = .{
+        .zap = .{
+            .url = "https://github.com/zigzap/zap/archive/v0.1.0.tar.gz",
+            .hash = "..."
+        },
+    },
+}
+```
+
+No `build.zig`, você importa:
+
+```zig
+const zap_dep = b.dependency("zap", .{
+    .target = target,
+    .optimize = optimize,
+});
+exe.root_module.addImport("zap", zap_dep.module("zap"));
+```

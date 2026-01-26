@@ -1,0 +1,254 @@
+---
+title: "Debugging com GDB"
+description: "Como usar o debugger mais poderoso do mundo Unix."
+difficulty: "Intermediário"
+duration: "18 min"
+tags: ["GDB", "Debugging", "Breakpoints", "Backtrace"]
+order: 2
+---
+
+Quando seu programa crasha ou produz resultados errados, você tem duas opções:
+
+1. Espalhar `printf` por todo o código e tentar adivinhar onde está o problema
+2. Usar um debugger e _ver_ exatamente o que está acontecendo
+
+A segunda opção é mais rápida e precisa. **GDB** (GNU Debugger) é o debugger padrão para C/C++ em sistemas Unix.
+
+## Compilando para Debug
+
+Para que o GDB mostre nomes de variáveis, funções e linhas de código (em vez de apenas endereços de memória), você precisa compilar com a flag `-g`:
+
+```bash
+gcc -g -Wall programa.c -o programa
+```
+
+**Dica**: Evite otimizações ao debugar. `-O2` ou `-O3` reordenam código e eliminam variáveis, tornando o debugging confuso. Use `-O0` (sem otimização) durante desenvolvimento.
+
+```bash
+gcc -g -O0 -Wall programa.c -o programa
+```
+
+## Iniciando o GDB
+
+```bash
+gdb ./programa
+```
+
+Você entra no prompt `(gdb)`. O programa ainda não está rodando — você está no controle.
+
+## Comandos Essenciais
+
+### Breakpoints: Onde Parar
+
+```gdb
+break main           # Para no início de main()
+break 42             # Para na linha 42 do arquivo atual
+break arquivo.c:42   # Para na linha 42 de arquivo.c
+break funcao         # Para no início de funcao()
+```
+
+Breakpoints condicionais:
+
+```gdb
+break 42 if i > 100  # Para apenas se i > 100
+```
+
+Gerenciar breakpoints:
+
+```gdb
+info break           # Lista todos os breakpoints
+delete 1             # Remove breakpoint número 1
+disable 2            # Desativa temporariamente
+enable 2             # Reativa
+```
+
+### Executando o Programa
+
+```gdb
+run                  # Inicia execução
+run arg1 arg2        # Com argumentos de linha de comando
+```
+
+O programa roda até encontrar um breakpoint, crash, ou terminar.
+
+### Navegando pelo Código
+
+| Comando             | Ação                                                                             |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `next` (ou `n`)     | Executa a próxima linha. Se for uma chamada de função, executa a função inteira. |
+| `step` (ou `s`)     | Executa a próxima instrução. Se for uma chamada de função, **entra** na função.  |
+| `continue` (ou `c`) | Continua execução até o próximo breakpoint ou fim.                               |
+| `finish`            | Executa até o fim da função atual e retorna.                                     |
+
+### Inspecionando Variáveis
+
+```gdb
+print x              # Valor de x
+print *ptr           # Valor apontado por ptr
+print arr[0]         # Primeiro elemento de array
+print arr[0]@5       # Primeiros 5 elementos
+print (float)i       # Cast
+print/x valor        # Em hexadecimal
+print/t valor        # Em binário
+print/c valor        # Como caractere
+```
+
+Para ver automaticamente a cada passo:
+
+```gdb
+display x            # Mostra x sempre que parar
+undisplay 1          # Remove display número 1
+```
+
+### Inspecionando Memória
+
+```gdb
+x/10x &var           # 10 palavras em hex a partir de &var
+x/s ptr              # Como string
+x/20b ptr            # 20 bytes
+x/4i $pc             # 4 instruções a partir do PC
+```
+
+### Backtrace: Quando o Programa Crasha
+
+Quando ocorre um segmentation fault ou você quer ver como chegou onde está:
+
+```gdb
+backtrace            # Mostra a pilha de chamadas
+bt full              # Com variáveis locais de cada frame
+```
+
+Exemplo de output:
+
+```
+#0  0x0000555555555169 in divide (a=10, b=0) at math.c:5
+#1  0x00005555555551a4 in main () at main.c:12
+```
+
+Isso diz: a função `main` (linha 12) chamou `divide` (linha 5), que é onde estamos.
+
+Para navegar entre frames:
+
+```gdb
+up                   # Sobe um nível na pilha
+down                 # Desce um nível
+frame 1              # Vai para frame específico
+```
+
+### Modificando em Tempo de Execução
+
+```gdb
+set var x = 42       # Muda valor de x
+call funcao(5)       # Chama função manualmente
+return 0             # Força retorno da função atual
+```
+
+## Fluxo Típico de Debugging
+
+1. **Compile com `-g`**:
+
+   ```bash
+   gcc -g -O0 programa.c -o programa
+   ```
+
+2. **Inicie o GDB**:
+
+   ```bash
+   gdb ./programa
+   ```
+
+3. **Defina breakpoints** no ponto suspeito:
+
+   ```gdb
+   break 45
+   ```
+
+4. **Execute**:
+
+   ```gdb
+   run
+   ```
+
+5. **Inspecione** quando parar:
+
+   ```gdb
+   print i
+   print buffer[0]@10
+   ```
+
+6. **Avance passo a passo**:
+
+   ```gdb
+   next
+   step
+   ```
+
+7. **Se crashar**, veja o backtrace:
+
+   ```gdb
+   bt
+   ```
+
+8. **Saia**:
+   ```gdb
+   quit
+   ```
+
+## Analisando Core Dumps
+
+Quando um programa crasha, o sistema pode gerar um **core dump** — uma cópia da memória no momento do crash.
+
+```bash
+# Habilita core dumps
+ulimit -c unlimited
+
+# Roda programa que crasha
+./programa_bugado
+
+# Analisa
+gdb ./programa_bugado core
+bt
+```
+
+O backtrace mostra exatamente onde estava quando crashou.
+
+## GDB com Interface Texto
+
+Para ver o código-fonte enquanto debuga:
+
+```bash
+gdb -tui ./programa
+```
+
+Ou dentro do GDB:
+
+```gdb
+layout src           # Mostra código-fonte
+layout asm           # Mostra assembly
+layout split         # Ambos
+```
+
+## Dicas Práticas
+
+1. **Loops infinitos**: Use `Ctrl+C` para interromper, depois `bt` para ver onde está preso.
+
+2. **Comparar antes/depois**: Use `display` para acompanhar variáveis críticas a cada passo.
+
+3. **Condições complexas**: `break 50 if strcmp(nome, "teste") == 0`
+
+4. **Watchpoints**: Para quando uma variável muda:
+
+   ```gdb
+   watch x            # Para quando x mudar
+   ```
+
+5. **Scripts GDB**: Crie `.gdbinit` com comandos que sempre quer executar.
+
+GDB tem centenas de comandos. Use `help comando` para documentação, e `apropos palavra` para buscar comandos relacionados.
+
+---
+
+**Referências:**
+
+- Stallman, R. M. et al. _Debugging with GDB_. Free Software Foundation
+- GDB Manual: https://sourceware.org/gdb/current/onlinedocs/gdb/

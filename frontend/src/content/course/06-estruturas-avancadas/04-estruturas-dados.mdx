@@ -1,0 +1,381 @@
+---
+title: "Estruturas de Dados em C"
+description: "Listas encadeadas, arrays dinâmicos e hash tables — os blocos fundamentais."
+difficulty: "Avançado"
+duration: "30 min"
+tags: ["Listas Encadeadas", "Arrays Dinâmicos", "Hash Tables", "Big O"]
+order: 4
+---
+
+Estruturas de dados são formas de organizar informação para que operações específicas sejam eficientes. A escolha certa pode significar a diferença entre um programa que roda em milissegundos e um que leva minutos.
+
+## Listas Encadeadas
+
+Uma **lista encadeada** é uma sequência de nós onde cada nó contém um valor e um ponteiro para o próximo.
+
+```
+┌───┬───┐    ┌───┬───┐    ┌───┬───┐
+│ 5 │ ─┼───►│ 8 │ ─┼───►│ 3 │ ∅ │
+└───┴───┘    └───┴───┘    └───┴───┘
+```
+
+### Implementação
+
+```c
+#include <stdlib.h>
+
+typedef struct No {
+    int valor;
+    struct No *proximo;
+} No;
+
+typedef struct {
+    No *cabeca;
+    int tamanho;
+} Lista;
+
+// Criar lista vazia
+Lista *lista_criar() {
+    Lista *lista = malloc(sizeof(Lista));
+    if (lista) {
+        lista->cabeca = NULL;
+        lista->tamanho = 0;
+    }
+    return lista;
+}
+
+// Inserir no início: O(1)
+void lista_inserir_inicio(Lista *lista, int valor) {
+    No *novo = malloc(sizeof(No));
+    if (!novo) return;
+
+    novo->valor = valor;
+    novo->proximo = lista->cabeca;
+    lista->cabeca = novo;
+    lista->tamanho++;
+}
+
+// Inserir no fim: O(n)
+void lista_inserir_fim(Lista *lista, int valor) {
+    No *novo = malloc(sizeof(No));
+    if (!novo) return;
+
+    novo->valor = valor;
+    novo->proximo = NULL;
+
+    if (lista->cabeca == NULL) {
+        lista->cabeca = novo;
+    } else {
+        No *atual = lista->cabeca;
+        while (atual->proximo != NULL) {
+            atual = atual->proximo;
+        }
+        atual->proximo = novo;
+    }
+    lista->tamanho++;
+}
+
+// Buscar: O(n)
+No *lista_buscar(Lista *lista, int valor) {
+    No *atual = lista->cabeca;
+    while (atual != NULL) {
+        if (atual->valor == valor) {
+            return atual;
+        }
+        atual = atual->proximo;
+    }
+    return NULL;
+}
+
+// Remover primeiro com valor: O(n)
+void lista_remover(Lista *lista, int valor) {
+    No *atual = lista->cabeca;
+    No *anterior = NULL;
+
+    while (atual != NULL) {
+        if (atual->valor == valor) {
+            if (anterior == NULL) {
+                lista->cabeca = atual->proximo;
+            } else {
+                anterior->proximo = atual->proximo;
+            }
+            free(atual);
+            lista->tamanho--;
+            return;
+        }
+        anterior = atual;
+        atual = atual->proximo;
+    }
+}
+
+// Liberar memória
+void lista_destruir(Lista *lista) {
+    No *atual = lista->cabeca;
+    while (atual != NULL) {
+        No *proximo = atual->proximo;
+        free(atual);
+        atual = proximo;
+    }
+    free(lista);
+}
+```
+
+### Complexidade
+
+| Operação            | Complexidade |
+| ------------------- | ------------ |
+| Inserir no início   | O(1)         |
+| Inserir no fim      | O(n)         |
+| Buscar              | O(n)         |
+| Remover (conhecido) | O(1)         |
+| Remover (por valor) | O(n)         |
+| Acessar por índice  | O(n)         |
+
+### Quando Usar
+
+✅ Inserções/remoções frequentes no início  
+✅ Tamanho desconhecido em compile-time  
+✅ Não precisa de acesso aleatório
+
+❌ Precisa acessar elementos por índice  
+❌ Cache-unfriendly (nós espalhados na memória)
+
+## Arrays Dinâmicos
+
+Um **array dinâmico** é um array que cresce automaticamente quando necessário.
+
+```c
+typedef struct {
+    int *dados;
+    int tamanho;
+    int capacidade;
+} VetorDinamico;
+
+VetorDinamico *vetor_criar(int capacidade_inicial) {
+    VetorDinamico *v = malloc(sizeof(VetorDinamico));
+    if (!v) return NULL;
+
+    v->dados = malloc(sizeof(int) * capacidade_inicial);
+    if (!v->dados) {
+        free(v);
+        return NULL;
+    }
+
+    v->tamanho = 0;
+    v->capacidade = capacidade_inicial;
+    return v;
+}
+
+// Redimensionar quando necessário
+static int vetor_redimensionar(VetorDinamico *v) {
+    int nova_capacidade = v->capacidade * 2;
+    int *novos_dados = realloc(v->dados, sizeof(int) * nova_capacidade);
+
+    if (!novos_dados) return -1;
+
+    v->dados = novos_dados;
+    v->capacidade = nova_capacidade;
+    return 0;
+}
+
+// Inserir no fim: O(1) amortizado
+int vetor_inserir(VetorDinamico *v, int valor) {
+    if (v->tamanho >= v->capacidade) {
+        if (vetor_redimensionar(v) != 0) {
+            return -1;
+        }
+    }
+    v->dados[v->tamanho++] = valor;
+    return 0;
+}
+
+// Acessar por índice: O(1)
+int vetor_get(VetorDinamico *v, int indice) {
+    if (indice < 0 || indice >= v->tamanho) {
+        return -1;  // Erro (simplificado)
+    }
+    return v->dados[indice];
+}
+
+// Remover do fim: O(1)
+int vetor_remover_fim(VetorDinamico *v) {
+    if (v->tamanho == 0) return -1;
+    return v->dados[--v->tamanho];
+}
+
+void vetor_destruir(VetorDinamico *v) {
+    free(v->dados);
+    free(v);
+}
+```
+
+### Complexidade
+
+| Operação          | Complexidade      |
+| ----------------- | ----------------- |
+| Acesso por índice | O(1)              |
+| Inserir no fim    | O(1) amortizado\* |
+| Remover do fim    | O(1)              |
+| Inserir no meio   | O(n)              |
+| Buscar            | O(n)              |
+
+\*"Amortizado" significa que a maioria das inserções é O(1), mas ocasionalmente você paga O(n) para redimensionar.
+
+### Quando Usar
+
+✅ Acesso aleatório frequente  
+✅ Inserções principalmente no fim  
+✅ Cache-friendly (memória contígua)
+
+❌ Inserções/remoções frequentes no meio  
+❌ Tamanho muito variável (desperdício de memória)
+
+## Hash Tables
+
+Uma **hash table** mapeia chaves para valores usando uma função hash. Acesso quase instantâneo.
+
+```c
+#include <string.h>
+
+#define TAMANHO_TABELA 1024
+
+typedef struct Entrada {
+    char *chave;
+    int valor;
+    struct Entrada *proxima;  // Para colisões (encadeamento)
+} Entrada;
+
+typedef struct {
+    Entrada *baldes[TAMANHO_TABELA];
+} HashTable;
+
+// Função hash simples (djb2)
+unsigned int hash(const char *str) {
+    unsigned int h = 5381;
+    int c;
+    while ((c = *str++)) {
+        h = ((h << 5) + h) + c;  // h * 33 + c
+    }
+    return h % TAMANHO_TABELA;
+}
+
+HashTable *hash_criar() {
+    HashTable *ht = calloc(1, sizeof(HashTable));
+    return ht;
+}
+
+// Inserir: O(1) médio
+void hash_inserir(HashTable *ht, const char *chave, int valor) {
+    unsigned int idx = hash(chave);
+
+    // Verificar se chave já existe
+    Entrada *atual = ht->baldes[idx];
+    while (atual) {
+        if (strcmp(atual->chave, chave) == 0) {
+            atual->valor = valor;  // Atualiza
+            return;
+        }
+        atual = atual->proxima;
+    }
+
+    // Inserir nova entrada
+    Entrada *nova = malloc(sizeof(Entrada));
+    nova->chave = strdup(chave);
+    nova->valor = valor;
+    nova->proxima = ht->baldes[idx];
+    ht->baldes[idx] = nova;
+}
+
+// Buscar: O(1) médio
+int *hash_buscar(HashTable *ht, const char *chave) {
+    unsigned int idx = hash(chave);
+
+    Entrada *atual = ht->baldes[idx];
+    while (atual) {
+        if (strcmp(atual->chave, chave) == 0) {
+            return &atual->valor;
+        }
+        atual = atual->proxima;
+    }
+
+    return NULL;  // Não encontrado
+}
+
+// Remover: O(1) médio
+void hash_remover(HashTable *ht, const char *chave) {
+    unsigned int idx = hash(chave);
+
+    Entrada *atual = ht->baldes[idx];
+    Entrada *anterior = NULL;
+
+    while (atual) {
+        if (strcmp(atual->chave, chave) == 0) {
+            if (anterior) {
+                anterior->proxima = atual->proxima;
+            } else {
+                ht->baldes[idx] = atual->proxima;
+            }
+            free(atual->chave);
+            free(atual);
+            return;
+        }
+        anterior = atual;
+        atual = atual->proxima;
+    }
+}
+```
+
+### Complexidade
+
+| Operação | Média | Pior Caso |
+| -------- | ----- | --------- |
+| Inserir  | O(1)  | O(n)      |
+| Buscar   | O(1)  | O(n)      |
+| Remover  | O(1)  | O(n)      |
+
+O pior caso acontece quando todas as chaves colidem no mesmo balde.
+
+### Quando Usar
+
+✅ Lookup por chave frequente  
+✅ Inserções/remoções aleatórias  
+✅ Não precisa de ordenação
+
+❌ Precisa iterar em ordem  
+❌ Chaves sem boa função hash
+
+## Comparação
+
+| Critério          | Lista       | Array Dinâmico | Hash Table |
+| ----------------- | ----------- | -------------- | ---------- |
+| Acesso por índice | O(n)        | O(1)           | N/A        |
+| Acesso por chave  | N/A         | N/A            | O(1)       |
+| Inserção início   | O(1)        | O(n)           | N/A        |
+| Inserção fim      | O(n)        | O(1)\*         | N/A        |
+| Busca             | O(n)        | O(n)           | O(1)       |
+| Memória           | Fragmentada | Contígua       | Mista      |
+| Cache             | Ruim        | Bom            | Médio      |
+
+## Uso Prático
+
+```c
+// Lista: fila de tarefas
+Lista *tarefas = lista_criar();
+lista_inserir_fim(tarefas, tarefa_id);
+
+// Array dinâmico: log de eventos
+VetorDinamico *log = vetor_criar(1000);
+vetor_inserir(log, timestamp);
+
+// Hash table: cache de configurações
+HashTable *config = hash_criar();
+hash_inserir(config, "timeout", 5000);
+int *timeout = hash_buscar(config, "timeout");
+```
+
+---
+
+**Referências:**
+
+- Cormen, T. H. et al. (2009). _Introduction to Algorithms_, 3rd Edition
+- Sedgewick, R. (1998). _Algorithms in C_, Parts 1-4

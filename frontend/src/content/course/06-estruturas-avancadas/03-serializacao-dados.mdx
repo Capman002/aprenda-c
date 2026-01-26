@@ -1,0 +1,288 @@
+---
+title: "Serialização de Dados"
+description: "Convertendo structs em bytes para transmissão e armazenamento."
+difficulty: "Avançado"
+duration: "22 min"
+tags: ["Serialização", "Protocolos", "TCP", "UART", "Endianness"]
+order: 3
+---
+
+Quando você precisa enviar uma struct por uma conexão serial, salvar em um arquivo, ou transmitir via TCP, precisa converter esses dados para uma sequência de bytes. Esse processo é a **serialização**. O inverso — reconstruir a struct a partir dos bytes — é a **deserialização**.
+
+C não tem suporte nativo para isso. Você faz manualmente, byte por byte.
+
+## O Problema
+
+Você não pode simplesmente fazer isso:
+
+```c
+// ERRADO: não funciona entre sistemas diferentes
+send(socket, &minha_struct, sizeof(minha_struct), 0);
+```
+
+Problemas:
+
+1. **Padding**: O compilador adiciona bytes extras para alinhamento
+2. **Endianness**: Ordem de bytes varia entre arquiteturas
+3. **Tamanho de tipos**: `int` pode ter 2, 4 ou 8 bytes
+4. **Ponteiros**: Endereços não têm significado fora do processo
+
+## Serialização Manual
+
+### Estrutura de Exemplo
+
+```c
+#include <stdint.h>
+
+typedef struct {
+    uint8_t  tipo;        // 1 byte
+    uint16_t id;          // 2 bytes
+    uint32_t timestamp;   // 4 bytes
+    int16_t  temperatura; // 2 bytes (em décimos de grau)
+} MensagemSensor;
+```
+
+### Serializando (Struct → Bytes)
+
+```c
+#include <string.h>
+
+// Para comunicação de rede, use network byte order (big-endian)
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#endif
+
+size_t serializar_mensagem(const MensagemSensor *msg, uint8_t *buffer) {
+    size_t offset = 0;
+
+    // Tipo (1 byte, sem conversão necessária)
+    buffer[offset++] = msg->tipo;
+
+    // ID (2 bytes, converter para big-endian)
+    uint16_t id_be = htons(msg->id);
+    memcpy(buffer + offset, &id_be, sizeof(id_be));
+    offset += sizeof(id_be);
+
+    // Timestamp (4 bytes, converter para big-endian)
+    uint32_t ts_be = htonl(msg->timestamp);
+    memcpy(buffer + offset, &ts_be, sizeof(ts_be));
+    offset += sizeof(ts_be);
+
+    // Temperatura (2 bytes, converter para big-endian)
+    uint16_t temp_be = htons((uint16_t)msg->temperatura);
+    memcpy(buffer + offset, &temp_be, sizeof(temp_be));
+    offset += sizeof(temp_be);
+
+    return offset;  // Total: 9 bytes
+}
+```
+
+### Deserializando (Bytes → Struct)
+
+```c
+int deserializar_mensagem(const uint8_t *buffer, size_t len, MensagemSensor *msg) {
+    if (len < 9) return -1;  // Buffer muito pequeno
+
+    size_t offset = 0;
+
+    // Tipo
+    msg->tipo = buffer[offset++];
+
+    // ID
+    uint16_t id_be;
+    memcpy(&id_be, buffer + offset, sizeof(id_be));
+    msg->id = ntohs(id_be);
+    offset += sizeof(id_be);
+
+    // Timestamp
+    uint32_t ts_be;
+    memcpy(&ts_be, buffer + offset, sizeof(ts_be));
+    msg->timestamp = ntohl(ts_be);
+    offset += sizeof(ts_be);
+
+    // Temperatura
+    uint16_t temp_be;
+    memcpy(&temp_be, buffer + offset, sizeof(temp_be));
+    msg->temperatura = (int16_t)ntohs(temp_be);
+    offset += sizeof(temp_be);
+
+    return 0;  // Sucesso
+}
+```
+
+## Conversão de Endianness
+
+| Função  | Direção        | Tamanho |
+| ------- | -------------- | ------- |
+| `htons` | Host → Network | 16 bits |
+| `ntohs` | Network → Host | 16 bits |
+| `htonl` | Host → Network | 32 bits |
+| `ntohl` | Network → Host | 32 bits |
+
+Network byte order é sempre **big-endian**.
+
+Para 64 bits, você pode criar:
+
+```c
+uint64_t htonll(uint64_t value) {
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    return ((uint64_t)htonl(value & 0xFFFFFFFF) << 32) | htonl(value >> 32);
+    #else
+    return value;
+    #endif
+}
+```
+
+## Protocolos Binários
+
+### Estrutura Típica
+
+```
+┌─────────────┬──────────┬─────────────────┬───────────┐
+│ Header (1B) │ Tipo (1B)│ Tamanho (2B)    │ Payload   │
+└─────────────┴──────────┴─────────────────┴───────────┘
+```
+
+### Definindo um Protocolo
+
+```c
+#define PROTO_HEADER     0xAA
+#define TIPO_SENSOR      0x01
+#define TIPO_COMANDO     0x02
+#define TIPO_ACK         0x03
+
+typedef struct {
+    uint8_t  header;   // Sempre 0xAA
+    uint8_t  tipo;
+    uint16_t tamanho;  // Tamanho do payload
+    uint8_t  payload[];  // Array flexível (C99)
+} Pacote;
+```
+
+### Enviando por Serial (UART)
+
+```c
+void enviar_sensor_uart(UART_HandleTypeDef *uart, const MensagemSensor *msg) {
+    uint8_t buffer[64];
+    size_t payload_len = serializar_mensagem(msg, buffer + 4);
+
+    // Header
+    buffer[0] = PROTO_HEADER;
+    buffer[1] = TIPO_SENSOR;
+    buffer[2] = (payload_len >> 8) & 0xFF;  // Tamanho high
+    buffer[3] = payload_len & 0xFF;         // Tamanho low
+
+    HAL_UART_Transmit(uart, buffer, 4 + payload_len, 100);
+}
+```
+
+### Recebendo
+
+```c
+int processar_pacote(const uint8_t *buffer, size_t len) {
+    if (len < 4) return -1;
+    if (buffer[0] != PROTO_HEADER) return -2;
+
+    uint8_t tipo = buffer[1];
+    uint16_t tamanho = (buffer[2] << 8) | buffer[3];
+
+    if (len < 4 + tamanho) return -3;  // Pacote incompleto
+
+    const uint8_t *payload = buffer + 4;
+
+    switch (tipo) {
+        case TIPO_SENSOR: {
+            MensagemSensor msg;
+            if (deserializar_mensagem(payload, tamanho, &msg) == 0) {
+                printf("Sensor %d: %d.%d°C\n",
+                       msg.id, msg.temperatura / 10, msg.temperatura % 10);
+            }
+            break;
+        }
+        // Outros tipos...
+    }
+
+    return 4 + tamanho;  // Bytes consumidos
+}
+```
+
+## Dados de Tamanho Variável
+
+Para strings ou arrays com tamanho variável:
+
+```c
+// Formato: [4 bytes tamanho][dados]
+
+size_t serializar_string(const char *str, uint8_t *buffer) {
+    uint32_t len = strlen(str);
+    uint32_t len_be = htonl(len);
+
+    memcpy(buffer, &len_be, 4);
+    memcpy(buffer + 4, str, len);
+
+    return 4 + len;
+}
+
+char *deserializar_string(const uint8_t *buffer, size_t buflen) {
+    if (buflen < 4) return NULL;
+
+    uint32_t len_be;
+    memcpy(&len_be, buffer, 4);
+    uint32_t len = ntohl(len_be);
+
+    if (buflen < 4 + len) return NULL;
+
+    char *str = malloc(len + 1);
+    if (str) {
+        memcpy(str, buffer + 4, len);
+        str[len] = '\0';
+    }
+
+    return str;
+}
+```
+
+## Verificação de Integridade
+
+Adicione checksum para detectar corrupção:
+
+```c
+uint8_t calcular_checksum(const uint8_t *data, size_t len) {
+    uint8_t sum = 0;
+    for (size_t i = 0; i < len; i++) {
+        sum ^= data[i];
+    }
+    return sum;
+}
+
+// CRC16 é mais robusto para comunicação crítica
+uint16_t crc16(const uint8_t *data, size_t len);
+```
+
+## Dicas para Embarcados
+
+1. **Buffers estáticos**: Evite `malloc` em sistemas com pouca RAM
+2. **Tamanho máximo**: Defina limites para evitar overflows
+3. **Timeouts**: Não espere indefinidamente por pacotes completos
+4. **Escape sequences**: Se 0xAA pode aparecer no payload, use stuffing
+5. **Alinhamento**: Use `memcpy` em vez de cast direto para evitar problemas de alinhamento
+
+```c
+// ERRADO em algumas arquiteturas
+uint32_t *ptr = (uint32_t *)buffer;
+uint32_t valor = *ptr;  // Pode causar exceção se não alinhado
+
+// CORRETO sempre
+uint32_t valor;
+memcpy(&valor, buffer, sizeof(valor));
+```
+
+---
+
+**Referências:**
+
+- Stevens, W. R. (1998). _Unix Network Programming_, Volume 1, Chapter 5
+- ARM Ltd. _Cortex-M Programming Guide_ - Memory Access
+- RFC 791 - Internet Protocol (define network byte order)

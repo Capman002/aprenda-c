@@ -1,0 +1,244 @@
+---
+title: "Complexidade de Algoritmos"
+description: "Big O: como medir se seu código vai escalar ou explodir."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Big O", "Complexidade", "Performance", "Algoritmos"]
+order: 0
+---
+
+Quando você escreve código, não basta funcionar. Precisa funcionar rápido o suficiente. Um algoritmo que processa 100 itens em 1ms pode levar 1 segundo para 10.000 itens, ou 1 hora, ou nunca terminar — dependendo de como foi escrito.
+
+**Notação Big O** descreve como o tempo de execução cresce conforme a entrada cresce.
+
+## O que Big O Mede
+
+Big O descreve o **comportamento assintótico** — o que acontece quando n (tamanho da entrada) fica grande. Ignora constantes e fatores menores.
+
+```c
+// Ambos são O(n)
+for (int i = 0; i < n; i++) { }      // n operações
+for (int i = 0; i < 2*n; i++) { }    // 2n operações
+for (int i = 0; i < n+1000; i++) { } // n+1000 operações
+```
+
+Para n = 1 milhão, a diferença entre n e 2n é insignificante comparada à diferença entre n e n².
+
+## Complexidades Comuns
+
+| Notação    | Nome         | Exemplo                   | n=1000    | n=1.000.000       |
+| ---------- | ------------ | ------------------------- | --------- | ----------------- |
+| O(1)       | Constante    | Acesso a array por índice | 1         | 1                 |
+| O(log n)   | Logarítmica  | Busca binária             | ~10       | ~20               |
+| O(n)       | Linear       | Loop simples              | 1.000     | 1.000.000         |
+| O(n log n) | Quase-linear | Merge sort, Quick sort    | ~10.000   | ~20.000.000       |
+| O(n²)      | Quadrática   | Loop aninhado             | 1.000.000 | 1.000.000.000.000 |
+| O(2ⁿ)      | Exponencial  | Força bruta               | 10³⁰⁰     | ∞                 |
+
+Observe como O(n²) explode: para n = 1 milhão, você tem 1 trilhão de operações.
+
+## O(1): Constante
+
+Tempo não depende do tamanho da entrada:
+
+```c
+int primeiro_elemento(int arr[], int n) {
+    return arr[0];  // Sempre 1 operação
+}
+```
+
+Acesso a array, inserção em hash table (caso médio), operações aritméticas.
+
+## O(log n): Logarítmica
+
+Divide o problema pela metade a cada passo:
+
+```c
+// Busca binária: O(log n)
+int busca_binaria(int arr[], int n, int alvo) {
+    int esq = 0, dir = n - 1;
+
+    while (esq <= dir) {
+        int meio = esq + (dir - esq) / 2;
+
+        if (arr[meio] == alvo) return meio;
+        if (arr[meio] < alvo) esq = meio + 1;
+        else dir = meio - 1;
+    }
+
+    return -1;
+}
+```
+
+Para 1 bilhão de elementos, busca binária faz ~30 comparações.
+
+## O(n): Linear
+
+Proporcional ao tamanho da entrada:
+
+```c
+// Soma de array: O(n)
+int soma(int arr[], int n) {
+    int total = 0;
+    for (int i = 0; i < n; i++) {
+        total += arr[i];
+    }
+    return total;
+}
+```
+
+Dobrar n dobra o tempo.
+
+## O(n log n): Quase-Linear
+
+Típico de algoritmos "divide and conquer":
+
+```c
+// Merge Sort: O(n log n)
+void merge_sort(int arr[], int n) {
+    if (n <= 1) return;
+
+    int meio = n / 2;
+    merge_sort(arr, meio);              // Metade esquerda
+    merge_sort(arr + meio, n - meio);   // Metade direita
+    merge(arr, meio, n);                // Combina: O(n)
+}
+```
+
+Dividir em log n níveis, cada nível faz O(n) trabalho.
+
+## O(n²): Quadrática
+
+Loops aninhados:
+
+```c
+// Bubble Sort: O(n²)
+void bubble_sort(int arr[], int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n - 1; j++) {
+            if (arr[j] > arr[j+1]) {
+                int temp = arr[j];
+                arr[j] = arr[j+1];
+                arr[j+1] = temp;
+            }
+        }
+    }
+}
+```
+
+Para n = 10.000, são 100 milhões de operações.
+
+## Como Analisar
+
+### Loops Simples
+
+```c
+for (int i = 0; i < n; i++) { }  // O(n)
+```
+
+### Loops Aninhados
+
+```c
+for (int i = 0; i < n; i++) {       // n vezes
+    for (int j = 0; j < n; j++) {   // × n vezes
+        // ...                      // = O(n²)
+    }
+}
+```
+
+### Loops com Incrementos Diferentes
+
+```c
+for (int i = 1; i < n; i *= 2) { }  // O(log n) - dobra a cada iteração
+for (int i = 0; i < n; i += k) { }  // O(n/k) = O(n)
+```
+
+### Loops Dependentes
+
+```c
+for (int i = 0; i < n; i++) {
+    for (int j = 0; j < i; j++) {  // 0 + 1 + 2 + ... + (n-1)
+        // ...                     // = n(n-1)/2 = O(n²)
+    }
+}
+```
+
+### Múltiplos Loops (Sequenciais)
+
+```c
+for (int i = 0; i < n; i++) { }   // O(n)
+for (int j = 0; j < m; j++) { }   // O(m)
+// Total: O(n + m) = O(max(n, m))
+```
+
+### Recursão
+
+```c
+// Fibonacci ingênuo: O(2ⁿ) - exponencial!
+int fib(int n) {
+    if (n <= 1) return n;
+    return fib(n-1) + fib(n-2);  // 2 chamadas por nível
+}
+
+// Fibonacci com memoização: O(n)
+int fib_memo(int n, int memo[]) {
+    if (memo[n] != -1) return memo[n];
+    if (n <= 1) return n;
+    memo[n] = fib_memo(n-1, memo) + fib_memo(n-2, memo);
+    return memo[n];
+}
+```
+
+## Complexidade de Espaço
+
+Além do tempo, considere memória:
+
+```c
+// O(n) espaço: cria array auxiliar
+int *duplicar(int arr[], int n) {
+    int *novo = malloc(n * sizeof(int));
+    // ...
+    return novo;
+}
+
+// O(1) espaço: trabalha in-place
+void reverter(int arr[], int n) {
+    for (int i = 0; i < n/2; i++) {
+        int temp = arr[i];
+        arr[i] = arr[n-1-i];
+        arr[n-1-i] = temp;
+    }
+}
+```
+
+## Regras Práticas
+
+| Se seu código tem...          | Provavelmente é... |
+| ----------------------------- | ------------------ |
+| 1 loop simples                | O(n)               |
+| 2 loops aninhados             | O(n²)              |
+| 3 loops aninhados             | O(n³)              |
+| Loop que divide por 2         | O(log n)           |
+| Recursão que divide + combina | O(n log n)         |
+| Recursão que ramifica         | O(2ⁿ) ou pior      |
+
+## Por que Isso Importa
+
+Para n = 1.000.000 (1 milhão):
+
+| Algoritmo  | Operações         | Tempo @ 1B ops/s |
+| ---------- | ----------------- | ---------------- |
+| O(log n)   | 20                | 20 nanosegundos  |
+| O(n)       | 1.000.000         | 1 milissegundo   |
+| O(n log n) | 20.000.000        | 20 milissegundos |
+| O(n²)      | 1.000.000.000.000 | 16 minutos       |
+| O(2ⁿ)      | ∞                 | Nunca termina    |
+
+A diferença entre O(n) e O(n²) pode ser a diferença entre "instantâneo" e "impossível".
+
+---
+
+**Referências:**
+
+- Cormen, T. H. et al. (2009). _Introduction to Algorithms_, Chapter 3
+- Skiena, S. S. (2008). _The Algorithm Design Manual_, Chapter 2

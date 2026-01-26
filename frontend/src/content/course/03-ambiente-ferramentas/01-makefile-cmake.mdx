@@ -1,0 +1,183 @@
+---
+title: "Sistemas de Build: Make e CMake"
+description: "Automatizando compilação — porque digitar gcc manualmente não escala."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Makefile", "CMake", "GCC", "Build System"]
+order: 1
+---
+
+Quando você tem um arquivo só, compilar com `gcc main.c -o main` funciona. Mas projetos reais têm dezenas ou centenas de arquivos. Recompilar tudo manualmente a cada mudança é inviável.
+
+**Sistemas de build** automatizam esse processo. Eles sabem quais arquivos mudaram e recompilam apenas o necessário.
+
+## Make e Makefile
+
+**Make** é uma ferramenta Unix clássica (1976) que lê instruções de um arquivo chamado `Makefile` e executa comandos de compilação.
+
+### Estrutura Básica
+
+Um Makefile define **targets** (o que você quer gerar), **dependências** (o que é necessário) e **comandos** (como gerar):
+
+```makefile
+target: dependências
+	comando
+```
+
+**Atenção**: O recuo antes do comando deve ser um **TAB**, não espaços. Isso é uma das peculiaridades mais irritantes do Make.
+
+### Exemplo Prático
+
+Projeto com 3 arquivos:
+
+- `main.c` — função main
+- `utils.c` — funções auxiliares
+- `utils.h` — header
+
+```makefile
+# Variáveis
+CC = gcc
+CFLAGS = -Wall -g
+
+# Target principal
+programa: main.o utils.o
+	$(CC) main.o utils.o -o programa
+
+# Compilação de objetos
+main.o: main.c utils.h
+	$(CC) $(CFLAGS) -c main.c
+
+utils.o: utils.c utils.h
+	$(CC) $(CFLAGS) -c utils.c
+
+# Limpeza
+clean:
+	rm -f *.o programa
+```
+
+### Como Funciona
+
+Quando você roda `make`, ele:
+
+1. Verifica se `programa` existe e está atualizado
+2. Se `main.o` ou `utils.o` mudaram, recompila `programa`
+3. Para cada `.o`, verifica se o `.c` ou `.h` correspondente mudou
+
+Se você alterar apenas `utils.c`, o Make recompila só `utils.o` e relinka — não recompila `main.c`.
+
+### Variáveis e Convenções
+
+```makefile
+CC = gcc              # Compilador
+CFLAGS = -Wall -O2    # Flags de compilação
+LDFLAGS = -lm         # Flags de linking (bibliotecas)
+SRC = $(wildcard *.c) # Todos os .c do diretório
+OBJ = $(SRC:.c=.o)    # Substitui .c por .o
+```
+
+### Regras Implícitas
+
+Make conhece padrões comuns. Esta regra é automática:
+
+```makefile
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+```
+
+Onde `$<` é a primeira dependência e `$@` é o target.
+
+## Por que CMake Existe
+
+Make funciona, mas tem problemas:
+
+- Sintaxe arcana e propensa a erros
+- Cada compilador/plataforma precisa de ajustes manuais
+- Gerenciar dependências grandes é trabalhoso
+- Não é portável (funciona bem no Linux, nem tanto no Windows)
+
+**CMake** foi criado como um _gerador de sistemas de build_. Você escreve um `CMakeLists.txt` declarativo, e o CMake gera Makefiles (Linux), projetos Visual Studio (Windows), Xcode (macOS), ou o que for apropriado.
+
+### CMakeLists.txt Básico
+
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(MeuProjeto)
+
+# Adiciona um executável
+add_executable(programa main.c utils.c)
+```
+
+Isso é equivalente ao Makefile anterior, mas em 3 linhas.
+
+### Usando CMake
+
+```bash
+# Cria diretório de build (fora do código-fonte)
+mkdir build
+cd build
+
+# Gera os arquivos de build
+cmake ..
+
+# Compila
+cmake --build .
+# ou simplesmente: make
+```
+
+### Recursos do CMake
+
+```cmake
+# Variáveis
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_FLAGS "-Wall -Wextra")
+
+# Incluir headers
+include_directories(include/)
+
+# Bibliotecas
+find_package(Threads REQUIRED)
+target_link_libraries(programa Threads::Threads)
+
+# Subdiretorios
+add_subdirectory(libs/minha_lib)
+
+# Instalação
+install(TARGETS programa DESTINATION bin)
+```
+
+## Quando Usar Cada Um
+
+| Cenário                         | Recomendação        |
+| ------------------------------- | ------------------- |
+| Projeto pequeno, só Linux       | Make é suficiente   |
+| Projeto multiplataforma         | CMake               |
+| Dependências externas complexas | CMake               |
+| Projeto legado com Makefile     | Mantenha o Makefile |
+| Novo projeto                    | CMake               |
+| Aprender como build funciona    | Comece com Make     |
+
+## Na Prática: ESP-IDF
+
+O framework ESP-IDF (para ESP32) usa CMake internamente. Quando você roda `idf.py build`, ele:
+
+1. Lê os `CMakeLists.txt` de cada componente
+2. Gera Makefiles ou Ninja files
+3. Compila e linka tudo
+
+Você não precisa escrever Makefiles para ESP32, mas entender o que acontece ajuda a debugar quando algo quebra.
+
+## Alternativas Modernas
+
+- **Ninja**: Substitui Make. É mais rápido, mas não escreve arquivos diretamente — geralmente é gerado pelo CMake
+- **Meson**: Alternativa ao CMake com sintaxe mais limpa
+- **Bazel**: Usado pelo Google para builds reproduzíveis em escala
+
+Para a maioria dos projetos C/C++, CMake + Ninja é a combinação padrão atual.
+
+---
+
+**Referências:**
+
+- GNU Make Manual: https://www.gnu.org/software/make/manual/
+- CMake Documentation: https://cmake.org/documentation/
+- Kitware (2023). _Professional CMake: A Practical Guide_

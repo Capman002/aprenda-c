@@ -1,0 +1,210 @@
+---
+title: "Tipos Fixos e Organização de Código"
+description: "stdint.h, static, extern — controle preciso sobre tipos e visibilidade."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["C", "stdint.h", "static", "extern", "Tipos"]
+order: 0
+---
+
+Em C padrão, o tamanho de um `int` depende da arquitetura e do compilador. Em algumas plataformas é 16 bits, em outras 32, em outras 64. Isso é um problema quando você precisa de garantias — especialmente em protocolos de rede, formatos de arquivo, ou hardware.
+
+## Tipos de Largura Fixa: `<stdint.h>`
+
+O header `<stdint.h>` (padrão desde C99) define tipos com tamanhos garantidos:
+
+| Tipo       | Bits | Com Sinal | Faixa                          |
+| ---------- | ---- | --------- | ------------------------------ |
+| `int8_t`   | 8    | Sim       | -128 a 127                     |
+| `uint8_t`  | 8    | Não       | 0 a 255                        |
+| `int16_t`  | 16   | Sim       | -32.768 a 32.767               |
+| `uint16_t` | 16   | Não       | 0 a 65.535                     |
+| `int32_t`  | 32   | Sim       | -2.147.483.648 a 2.147.483.647 |
+| `uint32_t` | 32   | Não       | 0 a 4.294.967.295              |
+| `int64_t`  | 64   | Sim       | ±9.2 × 10¹⁸                    |
+| `uint64_t` | 64   | Não       | 0 a 18.4 × 10¹⁸                |
+
+### Por que Usar
+
+1. **Protocolos e Formatos**: Se um protocolo especifica "campo de 32 bits", use `uint32_t`. Usar `int` pode funcionar na sua máquina e quebrar em outra.
+
+2. **Registradores de Hardware**: Um registrador de 16 bits deve ser acessado com `uint16_t`, não `int`.
+
+3. **Economia de Memória**: Em embarcados, usar `uint8_t` para um contador de 0-100 economiza 3 bytes comparado a `int` de 32 bits.
+
+4. **Código Portável**: O mesmo código compila corretamente em ARM, x86, RISC-V.
+
+### Exemplo Prático
+
+```c
+#include <stdint.h>
+#include <stdio.h>
+
+// Cabeçalho de um pacote de rede
+typedef struct {
+    uint8_t  versao;       // 1 byte
+    uint8_t  tipo;         // 1 byte
+    uint16_t tamanho;      // 2 bytes
+    uint32_t timestamp;    // 4 bytes
+} PacoteHeader;            // Total: 8 bytes, garantido
+
+int main() {
+    printf("Tamanho do header: %zu bytes\n", sizeof(PacoteHeader));
+    return 0;
+}
+```
+
+### Imprimindo Tipos Fixos
+
+Para `printf`, use macros de `<inttypes.h>`:
+
+```c
+#include <stdint.h>
+#include <inttypes.h>
+#include <stdio.h>
+
+uint32_t valor = 4000000000U;
+printf("Valor: %" PRIu32 "\n", valor);  // PRIu32 = formato correto
+```
+
+Macros comuns:
+
+- `PRId32` — decimal com sinal para `int32_t`
+- `PRIu32` — decimal sem sinal para `uint32_t`
+- `PRIx32` — hexadecimal para `uint32_t`
+
+### O Problema do `char`
+
+O padrão C não define se `char` é `signed` ou `unsigned` por padrão — isso varia por compilador. Nunca use `char` para aritmética numérica:
+
+```c
+// Errado: comportamento indefinido em alguns compiladores
+char contador = 200;  // Pode ser -56 se char for signed!
+
+// Correto
+uint8_t contador = 200;
+```
+
+Use `char` apenas para texto ASCII.
+
+---
+
+## Escopo, Linkagem e Duração
+
+Em C, três conceitos controlam a vida e visibilidade de variáveis:
+
+1. **Escopo**: Onde no código o nome é visível
+2. **Linkagem**: Se o símbolo é visível para outros arquivos
+3. **Duração**: Quanto tempo a variável existe
+
+### `static` Fora de Funções: Linkagem Interna
+
+Quando você declara uma variável ou função como `static` no nível de arquivo, ela fica invisível para outros arquivos:
+
+```c
+// arquivo1.c
+static int contador = 0;      // Só existe neste arquivo
+static void helper() { }      // Só pode ser chamada deste arquivo
+
+void funcao_publica() {
+    contador++;
+    helper();
+}
+```
+
+Se outro arquivo tentar `extern int contador;`, vai dar erro de linker — o símbolo não existe publicamente.
+
+**Uso**: Esconder detalhes de implementação. É o "private" do C.
+
+### `static` Dentro de Funções: Duração Estática
+
+Dentro de uma função, `static` muda a **duração**: a variável mantém seu valor entre chamadas:
+
+```c
+void contar_chamadas() {
+    static int vezes = 0;  // Inicializado apenas uma vez!
+    vezes++;
+    printf("Chamada %d\n", vezes);
+}
+
+int main() {
+    contar_chamadas();  // Chamada 1
+    contar_chamadas();  // Chamada 2
+    contar_chamadas();  // Chamada 3
+    return 0;
+}
+```
+
+Sem `static`, `vezes` seria reinicializado para 0 a cada chamada.
+
+### `extern`: Declaração sem Definição
+
+`extern` diz ao compilador: "essa variável existe, mas está definida em outro lugar".
+
+**arquivo1.c** (define a variável):
+
+```c
+int configuracao = 100;  // Definição: memória alocada aqui
+```
+
+**arquivo2.c** (usa a variável):
+
+```c
+extern int configuracao;  // Declaração: promessa de que existe
+
+void usar() {
+    printf("%d\n", configuracao);  // Acessa a variável de arquivo1.c
+}
+```
+
+### Padrão para Headers
+
+O padrão profissional é:
+
+- Header (`.h`): declara com `extern`
+- Implementação (`.c`): define
+
+```c
+// config.h
+#ifndef CONFIG_H
+#define CONFIG_H
+
+extern int timeout_ms;      // Promessa
+void aplicar_config(void);  // Protótipo
+
+#endif
+
+// config.c
+#include "config.h"
+
+int timeout_ms = 5000;      // Fato: memória alocada aqui
+
+void aplicar_config(void) {
+    // implementação
+}
+
+// main.c
+#include "config.h"
+
+int main() {
+    timeout_ms = 3000;  // Acessa a variável de config.c
+    aplicar_config();
+    return 0;
+}
+```
+
+### Resumo
+
+| Modificador | Nível    | Efeito                                              |
+| ----------- | -------- | --------------------------------------------------- |
+| `static`    | Arquivo  | Linkagem interna (invisível para outros arquivos)   |
+| `static`    | Função   | Duração estática (mantém valor entre chamadas)      |
+| `extern`    | Qualquer | Declara sem definir (símbolo existe em outro lugar) |
+| (nenhum)    | Arquivo  | Linkagem externa por padrão                         |
+
+---
+
+**Referências:**
+
+- ISO/IEC 9899:1999 (C99 Standard), Section 7.18 `<stdint.h>`
+- Kernighan, B. W., & Ritchie, D. M. (1988). _The C Programming Language_, 2nd Edition

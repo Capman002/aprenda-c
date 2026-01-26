@@ -1,0 +1,74 @@
+---
+title: "Git Avançado: Rebase, Bisect e Rerere"
+description: "Ferramentas cirúrgicas para manter o histórico limpo e debugar regressões automaticamente."
+difficulty: "Avançado"
+duration: "25 min"
+tags: ["Git", "Rebase", "Debugging", "Workflow"]
+order: 2
+---
+
+## Rebase Interativo (`-i`)
+
+O `git commit` raramente sai perfeito na primeira vez. Antes de abrir um PR, limpe a casa.
+
+```bash
+git rebase -i HEAD~3
+```
+
+Isso abre um editor com os últimos 3 commits. Comandos úteis:
+
+- **pick:** Mantém o commit.
+- **reword:** Mantém o conteúdo, mas permite editar a mensagem.
+- **squash:** Funde este commit com o anterior (útil para "fix typo").
+- **drop:** Apaga o commit da história.
+
+> **Regra de Ouro:** NUNCA faça rebase em branches públicas (main/develop). Apenas na sua feature branch local.
+
+## Resolvendo Conflitos com Inteligência
+
+### Git Rerere (Reuse Recorded Resolution)
+
+Se você faz rebases frequentes, vai resolver o mesmo conflito várias vezes. O `rerere` ensina o Git a lembrar como você resolveu.
+
+1.  Habilite: `git config --global rerere.enabled true`
+2.  Resolva um conflito e commite.
+3.  O Git grava a "impressão digital" do conflito.
+4.  No próximo rebase/merge com o mesmo conflito, o Git aplica a solução sozinho.
+
+## Git Bisect: O Caçador de Bugs
+
+Seu sistema funcionava semana passada (v1.0) e quebrou hoje (v1.1). Há 500 commits no meio. Onde quebrou?
+
+O `bisect` faz uma busca binária no histórico.
+
+1.  Inicie: `git bisect start`
+2.  Marque o ruim (atual): `git bisect bad`
+3.  Marque o bom (antigo): `git bisect good v1.0`
+4.  O Git faz checkout no meio.
+5.  Teste. Funcionou? `git bisect good`. Falhou? `git bisect bad`.
+6.  Repita até o Git dizer: **"Commit xyz is the first bad commit"**.
+
+### Automação (God Mode)
+
+Você pode rodar um script a cada passo!
+
+```bash
+git bisect run ./teste_automatizado.sh
+```
+
+O script deve retornar `0` (bom) ou não-zero (ruim). O Git encontra o culpado sozinho em segundos.
+
+## Hooks (Automação de Qualidade)
+
+Hooks são scripts em `.git/hooks` que rodam em eventos.
+
+- **pre-commit:** Roda linters/formatadores. Se falhar, o commit é abortado.
+- **pre-push:** Roda testes rápidos. Evita quebrar a CI.
+
+Exemplo de `pre-commit` (C/C++):
+
+```bash
+#!/bin/sh
+clang-format -i src/*.c
+cppcheck src/
+```
