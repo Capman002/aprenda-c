@@ -22,7 +22,12 @@ import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 
 const pageTitle = title === SITE.name ? title : `${title} | ${SITE.name}`;
-const canonicalURL = new URL(Astro.url.pathname, SITE.url);
+
+// Ensure trailing slash for canonical URL
+const pathname = Astro.url.pathname;
+const canonicalPath = pathname.endsWith('/') ? pathname : `${pathname}/`;
+const canonicalURL = new URL(canonicalPath, SITE.url);
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
