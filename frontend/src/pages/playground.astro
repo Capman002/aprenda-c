@@ -160,9 +160,9 @@ import { SITE } from '../site.config';
 </div>
 </Base>
 
-<style is:global>
-/* Premium Dark Theme Variables */
-:root {
+<style>
+/* Premium Dark Theme Variables (Scoped to Playground) */
+.playground-container {
   --bg-app: #09090b;       /* Zinc 950 */
   --bg-panel: #18181b;     /* Zinc 900 */
   --bg-subtle: #27272a;    /* Zinc 800 */
@@ -186,11 +186,7 @@ import { SITE } from '../site.config';
   
   --font-ui: 'Inter', system-ui, sans-serif;
   --font-code: 'JetBrains Mono', monospace;
-}
 
-* { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-
-body {
   font-family: var(--font-ui);
   background: var(--bg-app);
   color: var(--text-primary);
@@ -199,8 +195,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.playground-container * { box-sizing: border-box; }
+
+/* .playground-container styles merged above */
 .playground-container {
-  height: 100vh;
   display: flex;
   flex-direction: column;
   padding-top: 80px; 

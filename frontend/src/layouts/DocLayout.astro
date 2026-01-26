@@ -12,12 +12,11 @@ const { frontmatter, prev, next, headings = [] } = Astro.props;
 const tocHeadings = headings.filter((h: any) => h.depth > 1 && h.depth <= 3);
 
 import "@fontsource/inter/400.css";
-import "@fontsource/inter/500.css";
-import "@fontsource/inter/600.css";
+// import "@fontsource/inter/500.css"; // Omitido para performance
+import "@fontsource/inter/600.css"; // Mantendo Semi-bold para UI
 import "@fontsource/inter/700.css";
 import "@fontsource/jetbrains-mono/400.css";
-import "@fontsource/jetbrains-mono/400.css";
-import "@fontsource/jetbrains-mono/500.css";
+// import "@fontsource/jetbrains-mono/500.css"; 
 
 // Ensure trailing slash for canonical URL
 const pathname = Astro.url.pathname;

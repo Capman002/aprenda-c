@@ -2,10 +2,18 @@ import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 
 import sitemap from "@astrojs/sitemap";
+import purgecss from "astro-purgecss";
 
 export default defineConfig({
-  site: "https://aprendac.online", // URL do seu site
-  integrations: [mdx(), sitemap()],
+  site: "https://aprendac.online",
+  integrations: [
+    mdx(),
+    sitemap(),
+    purgecss({
+      fontFace: true,
+      safelist: ["html", "body", /^astro-/, /^toc-/, /^nav-/, "active"],
+    }),
+  ],
   server: {
     port: 4000,
   },
