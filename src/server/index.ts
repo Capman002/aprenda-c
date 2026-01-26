@@ -46,6 +46,16 @@ const app = new Elysia()
       allowedHeaders: ["Content-Type"],
     }),
   )
+  // Headers de Segurança (Helmet-style)
+  .onRequest(({ set }) => {
+    set.headers["X-Content-Type-Options"] = "nosniff";
+    set.headers["X-Frame-Options"] = "SAMEORIGIN";
+    set.headers["X-XSS-Protection"] = "1; mode=block";
+    set.headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    // CSP Básico - Ajuste conforme necessidade (permite imagens externas, scripts do mesmo domínio/cdn comum)
+    set.headers["Content-Security-Policy"] =
+      "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;";
+  })
 
   .get("/", () => ({
     name: "Course API (Docker Runner)",

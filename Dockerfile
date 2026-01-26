@@ -8,8 +8,8 @@ COPY package.json bun.lock ./
 COPY frontend/package.json frontend/bun.lock ./frontend/
 
 # Instalar dependências
-RUN bun install --frozen-lockfile
-RUN cd frontend && bun install --frozen-lockfile
+RUN bun install
+RUN cd frontend && bun install
 
 # Copiar código fonte
 COPY . .

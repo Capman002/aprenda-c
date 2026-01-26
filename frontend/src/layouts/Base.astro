@@ -1,9 +1,17 @@
 ---
+import { SEO } from "astro-seo";
+
 interface Props {
   title: string;
+  description?: string;
+  image?: string;
 }
 
-const { title } = Astro.props;
+const { 
+  title, 
+  description = "Aprenda C do zero ao avançado - Plataforma completa com playground interativo, sistemas embarcados e modernas linguagens de sistemas.",
+  image = "/og-image.png"
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -11,8 +19,39 @@ const { title } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-    <meta name="description" content="Curso de Programação - Fundamentos a Sistemas Embarcados" />
+    
+    <SEO
+      title={title}
+      titleTemplate="%s | Aprenda C"
+      description={description}
+      openGraph={{
+        basic: {
+          title: title,
+          type: "website",
+          image: image,
+          url: Astro.url.href,
+        },
+        optional: {
+          locale: "pt_BR",
+          siteName: "Aprenda C",
+          description: description,
+        }
+      }}
+      twitter={{
+        card: "summary_large_image",
+        site: "@capman002",
+        creator: "@capman002",
+      }}
+      extend={{
+        link: [{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
+        meta: [
+          { name: "twitter:image", content: image },
+          { name: "theme-color", content: "#0d1117" },
+          { name: "generator", content: Astro.generator }
+        ],
+      }}
+    />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
