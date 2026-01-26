@@ -52,9 +52,14 @@ const app = new Elysia()
     set.headers["X-Frame-Options"] = "SAMEORIGIN";
     set.headers["X-XSS-Protection"] = "1; mode=block";
     set.headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    // CSP Básico - Ajuste conforme necessidade (permite imagens externas, scripts do mesmo domínio/cdn comum)
+    // CSP Relaxada para Debug - Permite 'unsafe-inline' e 'unsafe-eval' que o Astro pode precisar
     set.headers["Content-Security-Policy"] =
-      "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;";
+      "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:;";
+  })
+
+  // Debug Middleware
+  .onRequest(({ request }) => {
+    console.log(`[REQ] ${request.method} ${request.url}`);
   })
 
   // Informações da API movidas para /api para liberar a raiz para o frontend
@@ -123,17 +128,39 @@ const app = new Elysia()
 // Em produção, servir arquivos estáticos do frontend
 const frontendDistPath = join(process.cwd(), "frontend/dist");
 
+console.log(`[INIT] Verificando arquivos estáticos em: ${frontendDistPath}`);
 if (isProduction && existsSync(frontendDistPath)) {
+  try {
+    const { readdirSync } = await import("fs");
+    const files = readdirSync(frontendDistPath);
+    console.log(
+      `[INIT] Arquivos encontrados (${files.length}):`,
+      files.slice(0, 5),
+    );
+  } catch (e) {
+    console.error("[INIT] Erro ao listar arquivos:", e);
+  }
+
+  // Servir assets do Astro (_astro/*)
   app.use(
     staticPlugin({
       assets: frontendDistPath,
-      prefix: "/",
-      alwaysStatic: false,
+      prefix: "", // No prefixo para servir na raiz
+      alwaysStatic: true, // Forçar modo estático
+      ignorePatterns: [/index\.html/], // Não servir index.html via estático automaticamente, deixar pro fallback
     }),
   );
 
-  // Fallback para SPA - retorna index.html para rotas não encontradas
-  app.get("*", async ({ set }) => {
+  // Fallback para SPA - retorna index.html para qualquer rota não encontrada (HTML)
+  app.get("*", async ({ path, set }) => {
+    // Se parecer um asset (tem extensão), tenta servir arquivo direto antes do fallback
+    if (path.includes(".") && !path.endsWith(".html")) {
+      const assetPath = join(frontendDistPath, path);
+      if (existsSync(assetPath)) {
+        return Bun.file(assetPath);
+      }
+    }
+
     set.headers["content-type"] = "text/html";
     const indexPath = join(frontendDistPath, "index.html");
     return new Response(await Bun.file(indexPath).text(), {
@@ -141,7 +168,9 @@ if (isProduction && existsSync(frontendDistPath)) {
     });
   });
 
-  console.log(`📁 Serving static files from: ${frontendDistPath}`);
+  console.log(`📁 Static files enabled from: ${frontendDistPath}`);
+} else {
+  console.error(`❌ Frontend build not found at: ${frontendDistPath}`);
 }
 
 app.listen(PORT);
