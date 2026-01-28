@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import Base from '../layouts/Base.astro';
 import FloatingMenu from '../components/FloatingMenu.astro';
+import MobileBottomMenu from '../components/MobileBottomMenu.astro';
 import Icon from '../components/Icon.astro';
 import FileExplorer from '../components/playground/FileExplorer.astro';
 import OutputPanel from '../components/playground/OutputPanel.astro';
@@ -11,6 +12,7 @@ import { SITE } from '../site.config';
 <Base title={`Playground C Interativo | ${SITE.name}`} description="Compile e execute código C diretamente no navegador.">
   <div class="playground-container">
     <FloatingMenu />
+    <MobileBottomMenu />
     
     <!-- IDE Layout -->
     <main class="ide-wrapper">
@@ -489,4 +491,64 @@ input:checked + .slider:before { transform: translateX(14px); background-color: 
 .modal-footer { display: flex; justify-content: flex-end; gap: 12px; }
 .btn-cancel { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary); padding: 8px 16px; border-radius: var(--radius-md); cursor: pointer; }
 .btn-confirm { background: var(--text-primary); color: black; border: none; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 500; cursor: pointer; }
+
+/* Mobile Adaptations */
+@media (max-width: 768px) {
+  .playground-container {
+    padding-top: 20px; /* Remove space for FloatingMenu */
+    padding-bottom: 80px; /* Space for MobileBottomMenu */
+  }
+  
+  /* Hide desktop menu explicitly */
+  :global(.floating-menu) {
+    display: none !important;
+  }
+  
+  .ide-wrapper {
+    margin: 0 12px; /* Smaller margins */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .ide-main {
+    flex-direction: column;
+    position: relative;
+  }
+  
+  /* On mobile, by default, hide Sidebar and Output to focus on Code */
+  /* We can toggle them with classes later, or just stack them with logic */
+  /* For a quick "adapted" version, let's hide sidebar and minimize output */
+  
+  :global(.file-explorer) {
+    display: none; /* TODO: Add toggle in future or use a drawer */
+  }
+  
+  .resizer {
+    display: none;
+  }
+  
+  .editor-area {
+    width: 100% !important;
+    flex: 1;
+  }
+  
+  :global(.output-panel) {
+    height: 150px !important; /* Fixed small height at bottom */
+    width: 100% !important;
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .toolbar {
+    padding: 0 12px;
+  }
+  
+  .project-name span {
+     display: none; /* Save space */
+  }
+  
+  .ide-footer {
+    display: none; /* Hide footer to save space, relies on MobileBottomMenu */
+  }
+}
 </style>

@@ -13,39 +13,36 @@ import Callout from "../../../components/Callout.astro";
 
 Até agora, seu código executa linha por linha, de cima para baixo. Mas programas reais precisam **tomar decisões** e **repetir ações**. É aqui que entram as estruturas de controle.
 
-> Conforme *Linguagem C Completa e Descomplicada* (André Backes): "Os comandos de controle condicional e de repetição completam a apresentação da estrutura básica da linguagem."
+> Conforme _Linguagem C Completa e Descomplicada_ (André Backes): "Os comandos de controle condicional e de repetição completam a apresentação da estrutura básica da linguagem."
 
 ## Operadores de Comparação
 
 Antes de controlar fluxo, você precisa comparar valores:
 
-| Operador | Significado | Exemplo |
-|----------|-------------|---------|
-| `==` | Igual a | `x == 5` |
-| `!=` | Diferente de | `x != 0` |
-| `<` | Menor que | `x < 10` |
-| `>` | Maior que | `x > 0` |
-| `<=` | Menor ou igual | `x <= 100` |
-| `>=` | Maior ou igual | `x >= 18` |
+| Operador | Significado    | Exemplo    |
+| -------- | -------------- | ---------- |
+| `==`     | Igual a        | `x == 5`   |
+| `!=`     | Diferente de   | `x != 0`   |
+| `<`      | Menor que      | `x < 10`   |
+| `>`      | Maior que      | `x > 0`    |
+| `<=`     | Menor ou igual | `x <= 100` |
+| `>=`     | Maior ou igual | `x >= 18`  |
 
 <Callout type="error" title="Erro Clássico">
-  Não confunda `=` (atribuição) com `==` (comparação)!
-  
-  ```c
-  if (x = 5)  // ERRADO: Isso ATRIBUI 5 a x, não compara!
-  if (x == 5) // CERTO: Isso COMPARA x com 5
-  ```
+  Não confunda `=` (atribuição) com `==` (comparação)! ```c if (x = 5) //
+  ERRADO: Isso ATRIBUI 5 a x, não compara! if (x == 5) // CERTO: Isso COMPARA x
+  com 5 ```
 </Callout>
 
 ## Operadores Lógicos
 
 Combine condições com lógica booleana:
 
-| Operador | Significado | Exemplo |
-|----------|-------------|---------|
-| `&&` | E (AND) | `x > 0 && x < 100` |
-| `\|\|` | OU (OR) | `x == 0 \|\| x == 1` |
-| `!` | NÃO (NOT) | `!encontrado` |
+| Operador | Significado | Exemplo              |
+| -------- | ----------- | -------------------- |
+| `&&`     | E (AND)     | `x > 0 && x < 100`   |
+| `\|\|`   | OU (OR)     | `x == 0 \|\| x == 1` |
+| `!`      | NÃO (NOT)   | `!encontrado`        |
 
 ## Condicional: `if` e `else`
 
@@ -112,15 +109,9 @@ switch (opcao) {
 ```
 
 <Callout type="warning" title="O break é essencial!">
-  Sem o `break`, a execução "cai" para o próximo `case`:
-  
-  ```c
-  case 'a':
-      printf("A\n");
-      // Sem break aqui...
-  case 'b':
-      printf("B\n"); // Isso também executa se opção == 'a'!
-  ```
+  Sem o `break`, a execução "cai" para o próximo `case`: ```c case 'a':
+  printf("A\n"); // Sem break aqui... case 'b': printf("B\n"); // Isso também
+  executa se opção == 'a'! ```
 </Callout>
 
 ## Repetição: `while`
@@ -137,6 +128,7 @@ while (contador <= 5) {
 ```
 
 Saída:
+
 ```
 Contagem: 1
 Contagem: 2
@@ -178,11 +170,11 @@ for (inicialização; condição; incremento) {
 }
 ```
 
-| Parte | Significado |
-|-------|-------------|
-| `int i = 0` | Executado UMA vez, antes do loop |
-| `i < 5` | Testado ANTES de cada iteração |
-| `i++` | Executado DEPOIS de cada iteração |
+| Parte       | Significado                       |
+| ----------- | --------------------------------- |
+| `int i = 0` | Executado UMA vez, antes do loop  |
+| `i < 5`     | Testado ANTES de cada iteração    |
+| `i++`       | Executado DEPOIS de cada iteração |
 
 ### Iterando Arrays
 
@@ -233,11 +225,11 @@ int main() {
     int senha_correta = 1234;
     int tentativas = 3;
     int senha;
-    
+
     while (tentativas > 0) {
         printf("Digite a senha (%d tentativas restantes): ", tentativas);
         scanf("%d", &senha);
-        
+
         if (senha == senha_correta) {
             printf("Acesso liberado!\n");
             break;
@@ -246,15 +238,15 @@ int main() {
             tentativas--;
         }
     }
-    
+
     if (tentativas == 0) {
         printf("Acesso bloqueado!\n");
     }
-    
+
     return 0;
 }
 ```
 
 ## Próximo Passo
 
-Com variáveis e controle de fluxo, você já consegue escrever programas úteis. Agora vamos aprender a **organizar código em funções** para não repetir lógica.
+Com variáveis e controle de fluxo, você já consegue escrever programas úteis. Agora vou ensinar a **organizar código em funções** para não repetir lógica.

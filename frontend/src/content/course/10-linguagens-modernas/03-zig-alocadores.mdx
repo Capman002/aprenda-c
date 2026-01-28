@@ -9,7 +9,7 @@ slug: "linguagens-modernas/zig-alocadores"
 module: "Módulo 10: Linguagens Modernas"
 ---
 
-Em C, usamos `malloc` global. Em Rust, o alocador global é o padrão.
+Em C, uso `malloc` global. Em Rust, o alocador global é o padrão.
 Em Zig, **não existe alocador global oculto**. Se uma função aloca memória, ela DEVE receber um `Allocator` por parâmetro.
 
 ```zig

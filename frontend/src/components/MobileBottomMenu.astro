@@ -1,0 +1,156 @@
+---
+import Icon from './Icon.astro';
+import { SITE, NAVIGATION } from '../site.config';
+
+const pathname = Astro.url.pathname;
+const isActive = (path: string) => {
+  if (path === '/') return pathname === '/';
+  if (path.length > 1 && pathname.startsWith(path)) return true;
+  return false;
+};
+---
+
+<nav class="mobile-bottom-menu">
+  <div class="menu-bar">
+    <a href="/" class={`menu-item ${isActive('/') ? 'active' : ''}`} data-astro-prefetch>
+      <div class="icon-wrapper">
+        <Icon name="home" size={20} />
+      </div>
+      <span class="label">Início</span>
+    </a>
+
+    {NAVIGATION.map(item => {
+        let icon: any = "info"; // Default fallback
+        if (item.label === "Curso") icon = "book-open"; 
+        if (item.label === "Playground") icon = "terminal";
+        if (item.label === "GitHub") return null; 
+
+        return (
+            <a href={item.href} class={`menu-item ${isActive(item.href) ? 'active' : ''}`} data-astro-prefetch>
+                <div class="icon-wrapper">
+                    <Icon name={icon} size={20} />
+                </div>
+                <span class="label">{item.label}</span>
+            </a>
+        )
+    })}
+
+    <!-- Menu Toggle -->
+    <button id="mobile-menu-toggle" class="menu-item">
+      <div class="icon-wrapper">
+        <Icon name="align-left" size={20} />
+      </div>
+      <span class="label">Módulos</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+  function setupMobileMenu() {
+    const toggleBtn = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (toggleBtn && sidebar) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle('mobile-open');
+        document.body.classList.toggle('overflow-hidden');
+      });
+      
+      // Close sidebar when clicking outside
+      document.addEventListener('click', (e) => {
+        if (sidebar.classList.contains('mobile-open') && 
+            !sidebar.contains(e.target as Node) && 
+            !toggleBtn.contains(e.target as Node)) {
+          sidebar.classList.remove('mobile-open');
+          document.body.classList.remove('overflow-hidden');
+        }
+      });
+      
+      // Close on link click
+      const links = sidebar.querySelectorAll('a');
+      links.forEach(link => {
+        link.addEventListener('click', () => {
+          sidebar.classList.remove('mobile-open');
+          document.body.classList.remove('overflow-hidden');
+        });
+      });
+    }
+  }
+
+  document.addEventListener('astro:page-load', setupMobileMenu);
+</script>
+
+<style>
+  .mobile-bottom-menu {
+    display: none; /* Default hidden on desktop */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(9, 9, 11, 0.95); /* Zinc 950 with opacity */
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .menu-bar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 60px;
+    padding: 0 12px;
+  }
+
+  .menu-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    text-decoration: none;
+    width: 64px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 12px;
+    transition: all 0.2s;
+  }
+
+  .label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .menu-item.active {
+    color: var(--text-primary);
+  }
+
+  .menu-item.active .icon-wrapper {
+    background: rgba(39, 226, 164, 0.1); /* Subtle green tint matching theme */
+    color: #27e2a4;
+  }
+
+  .menu-item:active {
+    transform: scale(0.92);
+  }
+
+  @media (max-width: 768px) {
+    .mobile-bottom-menu {
+      display: block;
+    }
+  }
+</style>

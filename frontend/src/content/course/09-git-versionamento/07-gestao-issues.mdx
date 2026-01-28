@@ -1,0 +1,67 @@
+---
+title: "Gestão de Issues e Trabalho em Equipe"
+description: "Como organizar tarefas, reportar bugs e colaborar de forma profissional usando Issues e Labels."
+difficulty: "Intermediário"
+duration: "20 min"
+tags: ["Git", "GitHub", "Issues", "Collaboration", "Labels"]
+order: 7
+slug: "git-versionamento/gestao-issues"
+module: "Módulo 09: Git Versionamento"
+---
+
+Código é apenas uma parte do projeto. A gestão de tarefas é o que move o software para frente, permitindo que eu e outros colaboradores saibamos o que precisa ser feito, o que está quebrado e o que já foi entregue.
+
+## 1. O que é uma Issue?
+
+Uma **Issue** é muito mais que um "ticket de erro". Ela é uma unidade de trabalho. No ambiente profissional, utilizo issues para:
+
+- **Relatar Bugs**: "O sensor de temperatura para de ler após 2 horas".
+- **Sugerir Melhorias (FR)**: "Adicionar suporte a TLS no broker MQTT".
+- **Gerir Tarefas (To-Do)**: "Refatorar driver de GPIO para usar bitfields".
+- **Discussões Técnicas**: "Devemos mudar de JSON para Protocol Buffers?".
+
+## 2. Anatomia de um Bug Report Profissional
+
+O maior custo de um desenvolvedor é tentar reproduzir um erro mal reportado. O clássico _"não funciona"_ ou _"está dando erro no meu PC"_ consome horas de depuração cega.
+
+Para evitar isso, utilizo **Issue Templates**. Um bom relatório deve conter:
+
+1.  **Contexto**: O que eu estava tentando fazer quando o erro ocorreu?
+2.  **Passos para Reproduzir**: Uma lista clara para que qualquer pessoa consiga ver o erro.
+    > 1. Conecte o ESP32 via USB.
+    > 2. Rode `make flash`.
+    > 3. Observe o log "Panic: Division by Zero".
+3.  **Comportamento Esperado vs. Real**: O que eu esperava que acontecesse? O que de fato aconteceu?
+4.  **Ambiente**: SO, versão da toolchain (GCC 12.3?), modelo da placa.
+
+## 3. Semântica de Labels (Etiquetas)
+
+Labels servem para triagem automatizada e organização visual. Em vez de criar dezenas de etiquetas confusas, utilizo um padrão semântico:
+
+- 🔴 `bug`: Código quebrado que precisa de correção imediata.
+- 🟡 `enhancement`: Nova funcionalidade ou melhoria de performance.
+- 🔵 `chore`: Tarefas de manutenção que não mudam o código final (ex: atualizar `.gitignore`).
+- 🟢 `good first issue`: Tarefas simples, ideais para novos membros do projeto.
+- ⚪ `status: needs-info`: Esperando resposta de quem abriu a issue.
+- ⚫ `wontfix`: A decisão técnica foi de não implementar essa sugestão.
+
+## 4. Conectando Código e Trabalho: Keywords
+
+Uma das funcionalidades mais poderosas é fechar issues automaticamente via commit. Se eu termino uma tarefa, uso palavras-chave na mensagem de commit:
+
+```bash
+git commit -m "fix: resolve memory leak in wifi driver (closes #42)"
+```
+
+Quando esse commit chegar na branch principal (main), o GitHub irá **fechar automaticamente** a issue #42. Isso mantém o quadro de trabalho sempre atualizado sem esforço manual.
+
+## 5. Projects: O Quadro Kanban
+
+Para visualizar o fluxo, utilizo o **GitHub Projects**. Ele transforma as issues em cartões em um quadro Kanban:
+
+1.  **Backlog**: Ideias e tarefas futuras.
+2.  **Todo**: O que decidi que farei no próximo sprint/semana.
+3.  **In Progress**: O que estou codando agora.
+4.  **Done**: Tarefas finalizadas e revisadas.
+
+> **Dica Prática**: Nunca comece a codar sem uma Issue associada. Isso garante que todo esforço está registrado e possui um contexto claro do porquê está sendo feito.

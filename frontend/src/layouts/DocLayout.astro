@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import SmartSidebar from '../components/SmartSidebar.astro';
 import FloatingMenu from '../components/FloatingMenu.astro';
+import MobileBottomMenu from '../components/MobileBottomMenu.astro';
 import Icon from '../components/Icon.astro';
 import { SITE } from '../site.config';
 import { SEO } from "astro-seo";
@@ -103,6 +104,7 @@ const jsonLd = {
 	</head>
 	<body>
 		<FloatingMenu />
+		<MobileBottomMenu />
 		<div class="app-shell">
 			<SmartSidebar />
 			
@@ -125,6 +127,20 @@ const jsonLd = {
 						</header>
 
 						<slot />
+
+						<!-- Mobile Support CTA (UX: Converta leitores engajados) -->
+						<div class="mobile-support-cta">
+							<a href="https://github.com/sponsors/Capman002/" target="_blank" class="support-card-mobile">
+								<div class="support-icon">
+									<Icon name="heart" size={24} />
+								</div>
+								<div class="support-content">
+									<strong>Gostou do conteúdo?</strong>
+									<span>Apoie o projeto e garanta novos módulos gratuitos.</span>
+								</div>
+								<Icon name="arrow-right" size={16} class="arrow-support" />
+							</a>
+						</div>
 
 						<!-- Navigation Footer -->
 						<footer class="doc-footer">
@@ -349,11 +365,18 @@ const jsonLd = {
 		display: flex;
 		flex-direction: column;
 		overflow-y: scroll;
+		overflow-x: hidden; /* Prevent horizontal scroll */
 		scroll-behavior: smooth;
 		background: var(--bg-app);
 		padding-top: 96px; /* Space for fixed navbar */
 		position: relative;
 	}
+
+  @media (max-width: 768px) {
+    .content-area {
+      padding-top: 24px; /* Remove huge gap on mobile since FloatingMenu is hidden */
+    }
+  }
 
 	/* Layout Grid & Responsiveness */
 	.content-grid {
@@ -446,6 +469,74 @@ const jsonLd = {
 		color: var(--text-primary);
 		letter-spacing: 0.05em;
 	}
+
+  /* Mobile Adjustments */
+  @media (max-width: 768px) {
+    .content-grid {
+      display: block; /* Remove Grid to fix overflow issues */
+      padding: 0 16px 120px 16px; 
+      width: 100%;
+      box-sizing: border-box; /* Ensure padding is included in width */
+    }
+    
+    .toc-sidebar {
+      display: none;
+    }
+    
+    /* Hide top floating menu on mobile */
+    :global(.floating-menu) {
+      display: none !important;
+    }
+
+    /* Typography Adjustments */
+    h1 { font-size: 2rem !important; line-height: 1.1; }
+    h2 { font-size: 1.5rem !important; margin-top: 2.5rem !important; }
+    h3 { font-size: 1.25rem !important; margin-top: 1.5rem !important; }
+    
+    p, li { 
+      font-size: 17px !important; /* Slightly smaller for mobile reading */
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Blockquote adjustments */
+    blockquote {
+      margin: 2rem 0;
+      padding: 16px 20px;
+    }
+    
+    /* Code block spacing */
+    pre {
+      margin: 1.5rem 0; /* No negative margins to avoid overflow */
+      width: 100%;
+      border-radius: 8px; /* Keep consistent border radius */
+      border: 1px solid var(--border);
+      overflow-x: auto; /* Handle internal scroll */
+    }
+    
+    /* Stats/Metadata compact */
+    .doc-metadata {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+    }
+    
+    /* Navigation Footer Mobile Stack */
+    .doc-footer {
+      grid-template-columns: 1fr; /* Stack buttons */
+      gap: 16px;
+      margin-top: 48px;
+    }
+    
+    .mobile-support-cta {
+       display: block !important;
+    }
+    
+    .nav-card.prev, .nav-card.next {
+      align-items: center;
+      text-align: center;
+      width: 100%;
+    }
+  }
 
 	.toc-nav ul {
 		list-style: none;
@@ -622,6 +713,67 @@ const jsonLd = {
 	}
 	tr:hover td { background: #0a0a0a; }
 
+	/* Mobile Support UX */
+	.mobile-support-cta {
+		display: none; /* Desktop default: Hidden */
+		margin: 40px 0 0 0;
+	}
+
+	.support-card-mobile {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		padding: 20px;
+		background: linear-gradient(135deg, rgba(39, 226, 164, 0.1), rgba(39, 226, 164, 0.05));
+		border: 1px solid rgba(39, 226, 164, 0.3);
+		border-radius: 12px;
+		text-decoration: none;
+		color: #fff;
+		transition: transform 0.2s;
+	}
+
+	.support-card-mobile:active {
+		transform: scale(0.98);
+		background: rgba(39, 226, 164, 0.15);
+	}
+
+	.support-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #27e2a4;
+		animation: pulse-heart 2s infinite ease-in-out;
+	}
+
+	@keyframes pulse-heart {
+		0% { transform: scale(1); }
+		50% { transform: scale(1.1); }
+		100% { transform: scale(1); }
+	}
+
+	.support-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.support-content strong {
+		font-size: 15px;
+		color: #27e2a4;
+	}
+
+	.support-content span {
+		font-size: 13px;
+		color: #a1a1aa;
+		line-height: 1.4;
+	}
+
+	.arrow-support {
+		color: #27e2a4;
+		opacity: 0.6;
+	}
+
 	/* Animations */
 	@keyframes fadeIn {
 		from { opacity: 0; transform: translateY(10px); }
@@ -630,11 +782,11 @@ const jsonLd = {
 	
 	.prose-content { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 
-	/* Navigation Footer Styles */
+	/* Navigation Footer Styles - Premium Redesign */
 	.doc-footer {
 		margin-top: 80px;
 		padding-top: 40px;
-		border-top: 1px solid var(--border);
+		border-top: 1px solid var(--border-subtle);
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 24px;
@@ -643,51 +795,61 @@ const jsonLd = {
 	.nav-card {
 		display: flex;
 		flex-direction: column;
-		padding: 24px;
-		border: 1px solid var(--border);
-		border-radius: 8px;
+		padding: 24px 32px;
+		border: 1px solid var(--border-subtle);
+		border-radius: 12px;
 		text-decoration: none;
-		background: var(--bg-surface);
-		transition: all 0.2s ease;
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		position: relative;
+		overflow: hidden;
 	}
 
 	.nav-card:hover {
-		border-color: var(--text-tertiary);
+		border-color: rgba(50, 145, 255, 0.4);
+		background: linear-gradient(180deg, rgba(50, 145, 255, 0.06) 0%, rgba(50, 145, 255, 0.02) 100%);
 		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+		box-shadow: 0 12px 40px -12px rgba(50, 145, 255, 0.2);
 	}
 
 	.nav-card.prev { align-items: flex-start; text-align: left; }
 	.nav-card.next { align-items: flex-end; text-align: right; }
 
 	.nav-label {
-		font-size: 12px;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--text-tertiary);
-		margin-bottom: 8px;
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-tertiary);
+		margin-bottom: 12px;
+		transition: all 0.3s ease;
 	}
-	
-	.rotate-90 { transform: rotate(90deg); }
 
-    .nav-card.prev .nav-label .rotate-90 {
-        transform: rotate(90deg);
-    }
+	.nav-card:hover .nav-label {
+		color: var(--accent-blue);
+	}
+
+	/* Icon Animations */
+	.nav-card.prev:hover .nav-label { transform: translateX(-4px); }
+	.nav-card.next:hover .nav-label { transform: translateX(4px); }
+
+	.rotate-90 { transform: rotate(90deg); }
+    .nav-card.prev .nav-label .rotate-90 { transform: rotate(90deg); }
 
 	.nav-title {
-		font-size: 16px;
+		font-size: 1.1rem;
 		font-weight: 600;
 		color: var(--text-primary);
+		line-height: 1.4;
+        transition: color 0.3s;
 	}
 	
 	.nav-card:hover .nav-title {
-		color: var(--accent-blue);
-	}
-	.nav-card:hover .nav-title {
-		color: var(--accent-blue);
+		color: #fff;
+		text-shadow: 0 0 20px rgba(50, 145, 255, 0.4);
 	}
 
 	/* Sidebar Author Profile - Redesigned */

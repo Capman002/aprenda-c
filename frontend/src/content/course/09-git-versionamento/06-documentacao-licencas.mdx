@@ -1,81 +1,128 @@
 ---
 title: "Documentação & Licenças Open Source"
-description: "Como proteger legalmente seu código e documentá-lo para que humanos entendam."
+description: "Estratégias de licenciamento jurídico e arquitetura de documentação para softwares de longa vida."
 difficulty: "Intermediário"
-duration: "20 min"
-tags: ["Documentation", "Licenses", "Open Source", "Law"]
-order: 4
+duration: "25 min"
+tags: ["Documentation", "Licenses", "Open Source", "Legal", "Architecture"]
+order: 6
 slug: "git-versionamento/documentacao-licencas"
 module: "Módulo 09: Git Versionamento"
 ---
 
-Código sem licença é juridicamente "todos os direitos reservados". Ninguém pode usar.
-Código sem documentação é inútil.
+Engenharia de Software não é apenas código; é sobre a gestão do ciclo de vida, proteção da propriedade intelectual e comunicação eficiente. Um código sem licença é juridicamente "todos os direitos reservados" (copyright exclusivo), tornando-o inutilizável por terceiros sem risco legal. Um código sem documentação é dívida técnica imediata.
 
-## Licenças Open Source: O Guia Sênior
+> **Nota sobre Maturidade**: O que define "qualidade" ou "senioridade" varia entre contextos e empresas. O que apresento aqui são práticas amplamente testadas na indústria para reduzir atrito e aumentar a manutenibilidade em projetos de longo prazo.
 
-### 1. Permissivas (Faça o que quiser)
+## 1. O Espectro de Licenciamento Open Source
 
-Ideais para adoção máxima e uso corporativo.
+A escolha da licença define a estratégia de distribuição e o modelo de negócios do software.
 
-- **MIT:** A mais simples. "Use, modifique, venda, só mantenha meu nome no arquivo de licença". (Ex: React, Node.js).
-- **Apache 2.0:** Similar à MIT, mas com **Proteção contra Patentes**. Se você me processar por patente usando meu software, sua licença cai. Favorita de grandes empresas (Google, Android).
+### Permissivas (Permissive)
 
-### 2. Copyleft (Viral)
+Maximizar a adoção. O foco é garantir que o código seja usado, modificado e distribuído com o mínimo de atrito.
 
-Ideais para garantir a liberdade do software para sempre.
+- **MIT**: A "regra de ouro" da simplicidade. Permite uso, cópia, modificação, fusão e venda. A única exigência é manter o aviso de copyright original. _Padrão de mercado para bibliotecas Node.js/React._
+- **Apache 2.0**: Similar à MIT, mas com um **Grau de Patente Expresso**. Se uma empresa usar meu software e tentar processar eu por violação de patentes relacionadas a ele, a licença delas é revogada automaticamente. _Essencial para colaborações corporativas (Google, Kubernetes)._
+- **BSD (2-Clause / 3-Clause)**: Semelhantes à MIT, mas o BSD 3-Clause proíbe o uso do nome dos autores para endossar produtos derivados.
 
-- **GPLv3:** Se você usar meu código, o SEU código derivado também tem que ser GPL (aberto). Empresas fogem disso em produtos proprietários.
-- **LGPL:** Permite linkar dinamicamente (`.dll`, `.so`) sem abrir seu código proprietário. Comum em bibliotecas C (glibc).
+### Copyleft (Viral)
 
-### 3. Licenças para Hardware/Documentação
+Garantir a liberdade do software perpetuamente. Obriga que trabalhos derivados mantenham a mesma licença.
 
-- **Creative Commons:** Para docs e imagens, não código.
+- **GPLv3 (Strong Copyleft)**: Se eu incluir ou vincular (estaticamente) código GPL no meu projeto, **todo o meu projeto** deve se tornar GPL e ter o código aberto. Empresas costumam evitar GPL em produtos proprietários devido ao "efeito viral".
+- **LGPL (Weak Copyleft)**: Um meio-termo. Permite vincular dinamicamente (dll/so) bibliotecas sem contaminar o código proprietário da aplicação principal. _Comum em drivers e bibliotecas do sistema (glibc)._
+- **AGPL (Network Copyleft)**: A GPL tem uma falha na era da nuvem: se eu rodar/modifico o software no servidor e disponibiliza via rede (SaaS), eu não "distribuiu" o binário, logo não precisava abrir o código. A AGPL fecha essa brecha: se usuários interagem pela rede, o código deve ser disponibilizado.
 
-## Documentação Técnica
+### Domínio Público
 
-### O README.md Perfeito
+- **Unlicense / CC0**: Renúncia total dos direitos autorais. Raramente recomendado para software complexo devido à falta de clareza sobre isenção de responsabilidade (liability).
 
-É a capa do seu projeto. Deve responder em 5 segundos:
+---
 
-1.  O que é?
-2.  Para que serve?
-3.  Como rodo agora? (Quickstart)
+## 2. Arquitetura de Documentação Moderna
 
-Exemplo de estrutura:
+Documentaçao não é apenas um arquivo de texto. É um sistema de comunicação assíncrona.
 
-```markdown
-# Meu Projeto IoT
+### O Framework Diátaxis
 
-Sistema de telemetria via Zenoh para ESP32.
+Para estruturar documentação robusta, uma abordagem comum é separar o conteúdo em quatro quadrantes:
 
-## Features
+1.  **Tutoriais**: Foco no _aprendizado_. Passo-a-passo prático para iniciantes.
+2.  **How-to Guides**: Foco na _tarefa_. Como resolver um problema específico (ex: "Como configurar CORS").
+3.  **Reference**: Foco na _informação_. Assinaturas de API, tipos, configurações (o que o Doxygen/Swagger gera).
+4.  **Explanation**: Foco no _entendimento_. Discussões de alto nível, design e trade-offs.
 
-- [x] Leitura DHT22
-- [ ] OTA Updates
+### Documentação de Decisões (ADR)
 
-## Build
+Projetos longevos exigem memória histórica. Uso **Architecture Decision Records (ADRs)** para registrar decisões importantes.
+Formato: _Contexto_, _Decisão_, _Consequências_.
 
-`make flash`
+> "Por que escolhi PostgreSQL ao invés de Mongo em 2024? Veja o ADR-002."
+
+### Ferramentas de Build de Documentação
+
+Documentar manualmente é propenso a erro e obsolescência. Utilizo ferramentas que tratam documentação como código (Docs-as-Code).
+
+#### Ferramentas Legadas/Específicas
+
+- **Doxygen**: Padrão para C/C++. Robustez inigualável para extrair referências do código.
+- **Sphinx/MkDocs**: Populares no ecossistema Python.
+
+#### A Nova Geração: Build My Docs
+
+Para projetos modernos e complexos, ferramentas tradicionais muitas vezes resultam em documentação fragmentada.
+
+O **Build My Docs** surge como uma solução unificada para "Documentação Full-Stack". Diferente de geradores estáticos simples, ele propõe:
+
+- **Centralização**: Agregar READMEs, ADRs, Docs de API e Manuais em uma única fonte da verdade.
+- **Contexto Semântico**: Estruturar a documentação para consumo humano e de LLMs.
+- **Automação de Build**: Integração nativa com pipelines de CI/CD para evitar a divergência entre código e documentação.
+
+> **Ponto Chave**: A melhor documentação é aquela que é fácil de escrever e difícil de ignorar. Ferramentas integradas reduzem a fricção cognitiva de manter docs atualizados.
+
+---
+
+## 3. Exemplo Prático: README.md Raiz
+
+Um README eficaz deve responder em 5 segundos: **O que é?**, **Para quem é?** e **Como rodo?**.
+
+````markdown
+# Iot-Telemetry-Core
+
+![CI Status](https://img.shields.io/github/actions/workflow/status/org/repo/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+Middleware de alta performance para ingestão de dados IoT usando protocolo MQTT sobre QUIC.
+
+## Arquitetura
+
+Consulte a pasta `/docs` para diagramas C4 e [ADR-001: Seleção do Protocolo de Transporte].
+
+## Quickstart
+
+### Pré-requisitos
+
+- Bun v1.1+
+- Container Runtime (Docker/Podman)
+
+### Rodando Localmente
+
+```bash
+# 1. Instale dependências
+bun install
+
+# 2. Suba a infraestrutura (Broker + DB)
+bun run infra:up
+
+# 3. Inicie o serviço
+bun run start:dev
+```
+````
+
+## Como Contribuir
+
+Leia meu [CONTRIBUTING.md](./CONTRIBUTING.md) para diretrizes de Code Review e DCO (Developer Certificate of Origin).
+
 ```
 
-### Documentando Código C (Doxygen vs Sphinx)
-
-Para API Reference (gerar site a partir dos comentários):
-
-- **Doxygen:** O padrão da indústria C/C++. Lê comentários `/** ... */`. Feio por padrão, mas robusto.
-- **Sphinx:** Baseado em Python. Muito mais bonito, templates modernos (ReadTheDocs). Com plugin `Breathe`, lê XML do Doxygen.
-
-**Best Practice Sênior:**
-Não comente o óbvio (`i++; // Incrementa i`).
-Comente o **PORQUÊ** e as **RESTRIÇÕES**.
-
-```c
-/**
- * @brief Calcula CRC32.
- * @warning Esta função não é reentrante (usa buffer estático).
- * @param data Ponteiro para dados (não pode ser NULL).
- * @return Checksum calculado.
- */
-uint32_t calc_crc32(const uint8_t *data, size_t len);
 ```

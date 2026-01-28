@@ -111,6 +111,12 @@ const isActive = (path: string) => {
   .floating-menu.menu-hidden {
     transform: translateY(-150%);
   }
+  
+  @media (max-width: 768px) {
+    .floating-menu {
+      display: none !important;
+    }
+  }
 
   .menu-pill {
     display: flex;

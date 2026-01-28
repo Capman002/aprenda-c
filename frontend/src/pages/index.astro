@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import FloatingMenu from '../components/FloatingMenu.astro';
+import MobileBottomMenu from '../components/MobileBottomMenu.astro';
 import Icon from '../components/Icon.astro';
 import Base from '../layouts/Base.astro';
 import { SITE } from '../site.config';
@@ -27,7 +28,10 @@ import { SITE } from '../site.config';
 	</head>
 	<body>
         <div class="landing-page">
-            <FloatingMenu />
+            <div class="desktop-menu">
+                <FloatingMenu />
+            </div>
+            <MobileBottomMenu />
 			
 			<main class="hero-container">
 				<div class="hero-content">
@@ -77,7 +81,14 @@ import { SITE } from '../site.config';
     --accent: #3b82f6;
 }
 
-body { margin: 0; background: var(--bg-app); font-family: 'Inter', sans-serif; color: var(--text-primary); height: 100vh; overflow: hidden; }
+body { 
+    margin: 0; 
+    background: var(--bg-app); 
+    font-family: 'Inter', sans-serif; 
+    color: var(--text-primary); 
+    min-height: 100vh; /* Use min-height instead of fixed height */
+    overflow-x: hidden; /* Only hide horizontal overflow */
+}
 * { box-sizing: border-box; }
 
 .landing-page {
@@ -227,5 +238,84 @@ h1 {
     line-height: 1;
     margin-top: -4px; /* Ajuste ótico fino para centralizar com o texto */
     opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .landing-page {
+        display: block; /* Fix flex issue hiding content */
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Hide floating menu wrapper (desktop) */
+    .desktop-menu {
+        display: none !important;
+    }
+
+    /* Additional safety for older rules */
+    :global(.floating-menu) {
+        display: none !important;
+    }
+
+    /* Typography & Spacing */
+    h1 {
+        font-size: 2.5rem; /* Better scale */
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        margin-bottom: 16px;
+    }
+    
+    .hero-desc {
+        font-size: 1rem;
+        padding: 0 16px;
+        margin-bottom: 32px;
+    }
+
+    .hero-container {
+        padding-top: 80px; 
+        padding-bottom: 140px; /* Space for bottom menu */
+        gap: 24px;
+        justify-content: flex-start;
+    }
+
+    /* Buttons Stacked */
+    .cta-group {
+        flex-direction: column; /* Stack buttons vertical */
+        width: 100%;
+        max-width: 280px; /* Limit width for aesthetics */
+        gap: 12px;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        height: 52px; /* Taller touch target */
+    }
+
+    /* Feature Cards - Fix Pill Shape */
+    .features-row {
+        flex-direction: column;
+        width: 100%;
+        gap: 32px;
+        margin-top: 24px;
+        border-radius: 24px; /* Relaxed radius, not pill */
+        padding: 32px 24px;
+        background: rgba(255,255,255,0.03);
+    }
+
+    .feature-item {
+        width: 100%;
+        gap: 4px;
+    }
+    
+    .feature-item h3 {
+        font-size: 1rem;
+    }
+
+    .separator {
+        display: none;
+    }
 }
 </style>
