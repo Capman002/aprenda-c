@@ -4,7 +4,7 @@
 FROM oven/bun:latest AS frontend-builder
 WORKDIR /app/frontend
 # Copiar apenas arquivos de dependência para cache layer
-COPY frontend/package.json frontend/bun.lockb ./
+COPY frontend/package.json frontend/bun.lock ./
 RUN bun install --frozen-lockfile
 
 # Copiar código fonte e buildar
@@ -41,7 +41,7 @@ WORKDIR /app
 RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
 # Copiar dependências do backend
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
 # Copiar arquivos do backend
