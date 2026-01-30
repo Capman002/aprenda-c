@@ -9,10 +9,10 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap(),
-    purgecss({
-      fontFace: true,
-      safelist: ["html", "body", /^astro-/, /^toc-/, /^nav-/, "active"],
-    }),
+    // purgecss({
+    //   fontFace: true,
+    //   safelist: ["html", "body", /^astro-/, /^toc-/, /^nav-/, "active"],
+    // }),
   ],
   server: {
     port: 4000,
