@@ -53,21 +53,25 @@ Content-Type: application/json
 
 #### Response - Sucesso (200)
 
-```json
 {
-  "success": true,
-  "output": "Hello, World!\n",
-  "exitCode": 0,
-  "executionTime": 45
+"success": true,
+"timestamp": "2026-01-30T10:00:00.000Z",
+"run": {
+"stdout": "Hello, World!\n",
+"stderr": "",
+"exitCode": 0,
+"signal": null
 }
-```
+}
+
+````
 
 | Campo           | Tipo    | Descrição                         |
 | --------------- | ------- | --------------------------------- |
-| `success`       | Boolean | Se a execução foi bem-sucedida    |
-| `output`        | String  | Saída combinada (stdout + stderr) |
-| `exitCode`      | Number  | Código de saída do programa       |
-| `executionTime` | Number  | Tempo de execução em ms           |
+| `success`       | Boolean | Se a requisição foi processada    |
+| `run.stdout`    | String  | Saída padrão do programa          |
+| `run.stderr`    | String  | Saída de erro e compilação        |
+| `run.exitCode`  | Number  | Código de saída (0=Sucesso)       |
 
 #### Response - Erro de Compilação (200)
 
@@ -78,7 +82,7 @@ Content-Type: application/json
   "exitCode": 1,
   "stage": "compile"
 }
-```
+````
 
 #### Response - Erro de Validação (400)
 
@@ -135,8 +139,8 @@ GET /api/runtimes
   "runtimes": [
     {
       "language": "c",
-      "version": "10.2.0",
-      "aliases": ["gcc"]
+      "version": "12.x (System GCC)",
+      "aliases": ["gcc", "clang"]
     }
   ]
 }
@@ -158,13 +162,13 @@ GET /api/runtimes
 
 ## Códigos de Erro
 
-| Código HTTP | Significado                              |
-| ----------- | ---------------------------------------- |
-| 200         | Sucesso (mesmo para erros de compilação) |
-| 400         | Request inválido                         |
-| 429         | Rate limit excedido                      |
-| 500         | Erro interno do servidor                 |
-| 503         | Serviço indisponível (Piston offline)    |
+| Código HTTP | Significado                                         |
+| ----------- | --------------------------------------------------- |
+| 200         | Sucesso (mesmo para erros de compilação)            |
+| 400         | Request inválido                                    |
+| 429         | Rate limit excedido                                 |
+| 500         | Erro interno do servidor                            |
+| 500         | Erro interno do servidor (Falha na execução nativa) |
 
 ---
 

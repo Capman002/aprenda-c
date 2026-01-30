@@ -1,33 +1,48 @@
 # Dependências
 node_modules/
 .bun/
-package-lock.json
 
-# Arquivos de teste temporários
+# Lockfiles (Package lock é ignorado pois usamos Bun, mas mantemos bun.lock/b)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Arquivos de teste temporários/Rascunhos
 test_*.json
 test_*.ts
+scratch.*
 
-# Build
+# Build e Dist (Global)
 dist/
+out/
+build/
 .astro/
 
-# Ambiente
+# Compilador C (Temporary Jobs) - CRÍTICO
+.jobs/
+
+# Ambiente e Segredos
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 bun-debug.log*
 
 # Sistema Operacional
 .DS_Store
+.AppleDouble
+.LSOverride
 Thumbs.db
 Desktop.ini
 
 # IDEs
 .vscode/
+*.code-workspace
 .idea/
 *.swp
 *.swo
@@ -40,11 +55,15 @@ Desktop.ini
 
 # Banco de dados local
 *.sqlite
+*.sqlite3
 *.db
+*.db-journal
 
-# Testes
+# Testes e Coverage
 coverage/
 .nyc_output/
+junit.xml
 
-# Arquivos de build específicos
+# TypeScript
 *.tsbuildinfo
+

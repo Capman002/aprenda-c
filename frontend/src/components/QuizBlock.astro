@@ -1,0 +1,763 @@
+---
+import CodeBox from "./CodeBox.astro";
+import type { QuizDefinition, QuizQuestion } from "../lib/quizBank";
+
+interface Props {
+  quiz: QuizDefinition;
+  mode: "topic" | "module";
+  topicSlug?: string;
+  moduleId?: string;
+}
+
+const { quiz, mode, topicSlug, moduleId } = Astro.props;
+---
+
+<section
+  class="quiz-block"
+  data-quiz-id={quiz.id}
+  data-quiz-mode={mode}
+  data-topic-slug={topicSlug}
+  data-module-id={moduleId}
+  data-quiz-json={JSON.stringify(quiz)}
+>
+  <header class="quiz-header">
+    <h2 class="quiz-title">{quiz.title}</h2>
+    <div class="quiz-meta">
+      <span class="quiz-count">{quiz.questions.length} questões</span>
+      {quiz.scope === "module" && (
+        <span class="quiz-badge">Prova do Módulo</span>
+      )}
+    </div>
+  </header>
+
+  <div class="quiz-progress" data-quiz-progress>
+    <div class="quiz-progress-top">
+      <div class="quiz-progress-label" data-progress-label></div>
+      <div class="quiz-progress-kpi" data-progress-kpi></div>
+    </div>
+    <div class="quiz-progress-bar">
+      <div class="quiz-progress-fill" data-progress-fill></div>
+    </div>
+  </div>
+
+  <form class="quiz-form" data-quiz-form>
+    {quiz.questions.map((q: QuizQuestion, idx: number) => (
+      <fieldset
+        class="quiz-card"
+        data-question-id={q.id}
+        data-question-idx={String(idx)}
+        data-result=""
+        data-answered="false"
+        hidden
+      >
+        <div class="card-head">
+          <div class="card-kicker">Questão {idx + 1} de {quiz.questions.length}</div>
+          <div class="question-prompt">{q.prompt}</div>
+        </div>
+
+        <div class="card-body">
+          {q.type === "single_choice" ? (
+            <div class="question-options" data-question-kind="single_choice">
+              {q.options.map((opt, optIdx) => (
+                <label class="option" data-option data-opt-idx={String(optIdx)}>
+                  <input
+                    type="radio"
+                    name={`q_${quiz.id}_${q.id}`}
+                    value={String(optIdx)}
+                  />
+                  <span class="option-text">{opt}</span>
+                </label>
+              ))}
+            </div>
+          ) : q.type === "numeric" ? (
+            <div class="question-numeric" data-question-kind="numeric">
+              <input
+                class="numeric-input"
+                type="number"
+                step="1"
+                name={`q_${quiz.id}_${q.id}`}
+              />
+              <button type="button" class="quiz-mini" data-check-numeric>
+                Checar
+              </button>
+            </div>
+          ) : (
+            <div class="question-practice" data-question-kind="practice">
+              {q.codeBox && (
+                <CodeBox title={q.codeBox.title} initialCode={q.codeBox.initialCode} />
+              )}
+              <button type="button" class="quiz-mini" data-mark-practice>
+                Concluir desafio
+              </button>
+            </div>
+          )}
+
+          <div class="card-note" data-feedback hidden>
+            <div class="note-title" data-feedback-status></div>
+          </div>
+        </div>
+      </fieldset>
+    ))}
+
+    <div class="quiz-footer" data-quiz-nav>
+      <div class="quiz-footer-left">
+        <button type="button" class="quiz-mini" data-hint-btn hidden>
+          Dica
+        </button>
+      </div>
+      <div class="quiz-footer-right">
+        <button type="button" class="quiz-nav-btn" data-prev>Anterior</button>
+        <button type="button" class="quiz-nav-btn" data-next>Próxima</button>
+        <button type="button" class="quiz-reset" data-quiz-reset>Refazer</button>
+      </div>
+    </div>
+
+    <div class="quiz-hint" data-hint hidden>
+      <div class="note-title">Dica</div>
+      <div class="note-text" data-hint-text></div>
+    </div>
+
+    <div class="quiz-result" data-quiz-result hidden>
+      <div class="result-title" data-result-title></div>
+      <div class="result-subtitle" data-result-subtitle></div>
+    </div>
+  </form>
+</section>
+
+<script>
+  import { gameStore } from "../lib/gameStore";
+
+  function normalizeNumber(value: any) {
+    if (typeof value !== "string") return undefined;
+    if (value.trim() === "") return undefined;
+
+    const n = Number(value);
+    if (Number.isNaN(n)) return undefined;
+    return n;
+  }
+
+  function initQuiz(root: HTMLElement) {
+    try {
+      if (!(root instanceof HTMLElement)) return;
+      if (root.dataset.initialized === "true") return;
+      root.dataset.initialized = "true";
+
+    const form = root.querySelector("[data-quiz-form]");
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const progressLabel = root.querySelector("[data-progress-label]");
+    const progressKpi = root.querySelector("[data-progress-kpi]");
+    const progressFill = root.querySelector("[data-progress-fill]");
+
+    const prevBtn = root.querySelector("[data-prev]");
+    const nextBtn = root.querySelector("[data-next]");
+    const resetBtn = root.querySelector("[data-quiz-reset]");
+    const resultEl = root.querySelector("[data-quiz-result]");
+    const resultTitle = root.querySelector("[data-result-title]");
+    const resultSubtitle = root.querySelector("[data-result-subtitle]");
+
+    const quizId = root.dataset.quizId;
+    const mode = root.dataset.quizMode;
+    const topicSlug = root.dataset.topicSlug;
+    const moduleId = root.dataset.moduleId;
+
+    const quizJson = root.getAttribute("data-quiz-json");
+    let quizData;
+    try {
+      quizData = quizJson ? JSON.parse(quizJson) : undefined;
+    } catch {
+      quizData = undefined;
+    }
+
+    if (!quizData || !Array.isArray(quizData.questions)) return;
+
+    const questions = quizData.questions;
+    const questionEls = Array.from(root.querySelectorAll("[data-question-id]"));
+
+    const passingScore = typeof quizData.passingScore === "number" ? quizData.passingScore : 0.7;
+
+    const answers = new Map();
+    let currentIdx = 0;
+
+    const hintBtn = root.querySelector("[data-hint-btn]");
+    const hintBox = root.querySelector("[data-hint]");
+    const hintText = root.querySelector("[data-hint-text]");
+
+    function syncHintButton() {
+      const q = questions[currentIdx];
+      if (!(hintBtn instanceof HTMLButtonElement)) return;
+      const hasHint = q && typeof q.hint === "string" && q.hint.trim() !== "";
+      hintBtn.hidden = !hasHint;
+      if (hintBox instanceof HTMLElement) hintBox.hidden = true;
+    }
+
+    function isScored(q: any) {
+      if (q && q.scored === false) return false;
+      return q && q.type !== "practice";
+    }
+
+    function scoredTotal() {
+      let total = 0;
+      for (const q of questions) if (isScored(q)) total++;
+      return total;
+    }
+
+    function scoredCorrect() {
+      let correct = 0;
+      for (const q of questions) {
+        if (!isScored(q)) continue;
+        const a = answers.get(q.id);
+        if (a && a.correct === true) correct++;
+      }
+      return correct;
+    }
+
+    function updateProgress() {
+      const total = questions.length || 1;
+      const pct = ((currentIdx + 1) / total) * 100;
+
+      if (progressFill instanceof HTMLElement) progressFill.style.width = `${pct}%`;
+      if (progressLabel instanceof HTMLElement) progressLabel.textContent = `Questão ${currentIdx + 1} de ${total}`;
+
+      const st = scoredTotal();
+      const sc = scoredCorrect();
+      if (progressKpi instanceof HTMLElement) progressKpi.textContent = st > 0 ? `${sc}/${st}` : "—";
+    }
+
+    function showCard(idx: number) {
+      currentIdx = Math.max(0, Math.min(idx, questionEls.length - 1));
+      for (const el of questionEls) {
+        if (!(el instanceof HTMLElement)) continue;
+        const i = Number(el.dataset.questionIdx || "0");
+        el.hidden = i !== currentIdx;
+      }
+
+      if (prevBtn instanceof HTMLButtonElement) prevBtn.disabled = currentIdx === 0;
+      if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = currentIdx >= questionEls.length - 1;
+
+      updateProgress();
+      syncHintButton();
+    }
+
+    function lockQuestion(qEl: HTMLElement) {
+      const inputs = Array.from(qEl.querySelectorAll("input"));
+      for (const i of inputs) if (i instanceof HTMLInputElement) i.disabled = true;
+      qEl.dataset.answered = "true";
+    }
+
+    function renderFeedback(qEl: HTMLElement, q: any, isCorrect: boolean) {
+      qEl.dataset.result = isCorrect ? "correct" : "incorrect";
+
+      const fb = qEl.querySelector("[data-feedback]");
+      const fbStatus = qEl.querySelector("[data-feedback-status]");
+
+      if (fb instanceof HTMLElement) fb.hidden = false;
+      if (fbStatus instanceof HTMLElement) fbStatus.textContent = isCorrect ? "Correto" : "Incorreto";
+
+      const optionEls = Array.from(qEl.querySelectorAll("[data-option]"));
+      if (q.type === "single_choice") {
+        for (const optEl of optionEls) {
+          if (!(optEl instanceof HTMLElement)) continue;
+          const optIdx = Number(optEl.dataset.optIdx || "-1");
+          optEl.dataset.state = "";
+          if (optIdx === q.correctIndex) optEl.dataset.state = "correct";
+        }
+      }
+    }
+
+    function maybeFinalize() {
+      const st = scoredTotal();
+      if (st <= 0) return;
+
+      for (const q of questions) {
+        if (!isScored(q)) continue;
+        const a = answers.get(q.id);
+        if (!a) return;
+      }
+
+      const correct = scoredCorrect();
+      const ratio = correct / st;
+
+      if (resultEl instanceof HTMLElement) {
+        resultEl.hidden = false;
+        resultEl.dataset.status = "ok";
+      }
+      if (resultTitle instanceof HTMLElement) resultTitle.textContent = `Resultado: ${correct}/${st}`;
+
+      if (resultSubtitle instanceof HTMLElement) {
+        if (mode === "module") {
+          const passed = ratio >= passingScore;
+          resultSubtitle.textContent = passed
+            ? "Aprovado — progresso do módulo registrado"
+            : "Ainda não atingiu a nota mínima — você pode refazer";
+          if (resultEl instanceof HTMLElement) resultEl.dataset.status = passed ? "passed" : "failed";
+        } else {
+          resultSubtitle.textContent = "Progresso do tópico registrado";
+        }
+      }
+
+      if (mode === "topic" && typeof topicSlug === "string") {
+        gameStore.completeTopic(topicSlug, correct, st);
+      }
+
+      if (mode === "module" && typeof moduleId === "string") {
+        gameStore.completeModuleExam(moduleId, correct, st, passingScore);
+      }
+    }
+
+    if (resetBtn instanceof HTMLButtonElement) {
+      resetBtn.addEventListener("click", () => {
+        form.reset();
+        answers.clear();
+        if (resultEl instanceof HTMLElement) {
+          resultEl.hidden = true;
+          resultEl.dataset.status = "";
+        }
+
+        for (const el of questionEls) {
+          if (!(el instanceof HTMLElement)) continue;
+          el.dataset.result = "";
+          el.dataset.answered = "false";
+          const inputs = Array.from(el.querySelectorAll("input"));
+          for (const i of inputs) if (i instanceof HTMLInputElement) i.disabled = false;
+
+          const fb = el.querySelector("[data-feedback]");
+          const hint = root.querySelector("[data-hint]");
+
+          if (fb instanceof HTMLElement) fb.hidden = true;
+          if (hint instanceof HTMLElement) hint.hidden = true;
+
+          const optionEls = Array.from(el.querySelectorAll("[data-option]"));
+          for (const optEl of optionEls) {
+            if (optEl instanceof HTMLElement) optEl.dataset.state = "";
+          }
+        }
+
+        showCard(0);
+      });
+    }
+
+    for (const el of questionEls) {
+      if (!(el instanceof HTMLElement)) continue;
+
+      const idx = Number(el.dataset.questionIdx || "0");
+      const q = questions[idx];
+      if (!q) continue;
+
+      if (q.type === "single_choice") {
+        const inputs = Array.from(el.querySelectorAll("input"));
+        for (const input of inputs) {
+          if (!(input instanceof HTMLInputElement)) continue;
+          input.addEventListener("change", () => {
+            if (el.dataset.answered === "true") return;
+            const selected = Number(input.value);
+            const isCorrect = selected === q.correctIndex;
+
+            answers.set(q.id, { correct: isCorrect });
+            lockQuestion(el);
+            renderFeedback(el, q, isCorrect);
+            updateProgress();
+            maybeFinalize();
+
+            const optionEls = Array.from(el.querySelectorAll("[data-option]"));
+            for (const optEl of optionEls) {
+              if (!(optEl instanceof HTMLElement)) continue;
+              const optIdx = Number(optEl.dataset.optIdx || "-1");
+              if (optIdx === selected && optIdx !== q.correctIndex) optEl.dataset.state = "incorrect";
+            }
+          });
+        }
+      }
+
+      if (q.type === "numeric") {
+        const checkBtn = el.querySelector("[data-check-numeric]");
+        const input = el.querySelector(".numeric-input");
+        if (checkBtn instanceof HTMLButtonElement && input instanceof HTMLInputElement) {
+          checkBtn.addEventListener("click", () => {
+            if (el.dataset.answered === "true") return;
+            const v = normalizeNumber(input.value);
+            if (typeof v !== "number") return;
+            const isCorrect = v === q.answer;
+            answers.set(q.id, { correct: isCorrect });
+            lockQuestion(el);
+            checkBtn.disabled = true;
+            renderFeedback(el, q, isCorrect);
+            updateProgress();
+            maybeFinalize();
+          });
+        }
+      }
+
+      if (q.type === "practice") {
+        const doneBtn = el.querySelector("[data-mark-practice]");
+        if (doneBtn instanceof HTMLButtonElement) {
+          doneBtn.addEventListener("click", () => {
+            if (el.dataset.answered === "true") return;
+            answers.set(q.id, { correct: true });
+            lockQuestion(el);
+            doneBtn.disabled = true;
+            renderFeedback(el, q, true);
+            updateProgress();
+            maybeFinalize();
+          });
+        }
+      }
+    }
+
+    if (prevBtn instanceof HTMLButtonElement) prevBtn.addEventListener("click", () => showCard(currentIdx - 1));
+    if (nextBtn instanceof HTMLButtonElement) nextBtn.addEventListener("click", () => showCard(currentIdx + 1));
+
+    if (hintBtn instanceof HTMLButtonElement) {
+      hintBtn.addEventListener("click", () => {
+        const q = questions[currentIdx];
+        if (!(hintBox instanceof HTMLElement)) return;
+        hintBox.hidden = !hintBox.hidden;
+        if (hintText instanceof HTMLElement) hintText.textContent = q && q.hint ? q.hint : "";
+      });
+    }
+
+    showCard(0);
+    } catch (err) {
+      console.error("QuizBlock: Init error", err);
+    }
+  }
+
+  function boot() {
+    const blocks = Array.from(document.querySelectorAll(".quiz-block"));
+    for (const b of blocks) {
+        if (b instanceof HTMLElement) initQuiz(b);
+    }
+  }
+
+  document.addEventListener("astro:page-load", boot);
+</script>
+
+<style>
+  .quiz-block {
+    margin-top: 56px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    background: var(--bg-surface);
+    padding: 20px;
+  }
+
+  .quiz-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 18px;
+  }
+
+  .quiz-title {
+    font-size: 16px;
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .quiz-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .quiz-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .quiz-badge {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(50, 145, 255, 0.25);
+    color: var(--accent-blue);
+    background: rgba(50, 145, 255, 0.08);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .quiz-progress {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .quiz-progress-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .quiz-progress-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .quiz-progress-kpi {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .quiz-progress-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+  }
+
+  .quiz-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: rgba(50, 145, 255, 0.35);
+  }
+
+  .quiz-card {
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.22);
+  }
+
+  .quiz-card[data-result="correct"] {
+    border-color: rgba(39, 226, 164, 0.35);
+    background: rgba(39, 226, 164, 0.06);
+  }
+
+  .quiz-card[data-result="incorrect"] {
+    border-color: rgba(255, 90, 90, 0.28);
+    background: rgba(255, 90, 90, 0.05);
+  }
+
+  .card-head {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .card-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .card-body {
+    display: grid;
+    gap: 12px;
+  }
+
+  .question-options {
+    display: grid;
+    gap: 10px;
+  }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+  }
+
+  .option[data-state="correct"] {
+    border-color: rgba(39, 226, 164, 0.35);
+    background: rgba(39, 226, 164, 0.08);
+  }
+
+  .option[data-state="incorrect"] {
+    border-color: rgba(255, 90, 90, 0.30);
+    background: rgba(255, 90, 90, 0.06);
+  }
+
+  .option:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .option input {
+    margin-top: 2px;
+  }
+
+  .option-text {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .question-numeric {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .question-practice {
+    display: grid;
+    gap: 10px;
+  }
+
+  .numeric-input {
+    width: 160px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .quiz-mini {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .quiz-mini:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .quiz-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .quiz-footer-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .quiz-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .quiz-hint {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .card-note {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 12px;
+    display: grid;
+    gap: 6px;
+  }
+
+  .note-title {
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
+  }
+
+  .note-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  .quiz-nav-btn {
+    background: rgba(50, 145, 255, 0.14);
+    border: 1px solid rgba(50, 145, 255, 0.30);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 13px;
+  }
+
+  .quiz-nav-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .quiz-reset {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .quiz-reset:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+  }
+
+  .quiz-result {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .quiz-result[data-status="passed"] {
+    border-color: rgba(39, 226, 164, 0.35);
+    background: rgba(39, 226, 164, 0.06);
+  }
+
+  .quiz-result[data-status="failed"] {
+    border-color: rgba(255, 90, 90, 0.28);
+    background: rgba(255, 90, 90, 0.05);
+  }
+
+  .result-title {
+    font-weight: 800;
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  .result-subtitle {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-top: 4px;
+    line-height: 1.45;
+  }
+</style>

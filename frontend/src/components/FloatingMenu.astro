@@ -5,9 +5,14 @@ import { SITE, NAVIGATION } from '../site.config';
 const pathname = Astro.url.pathname;
 const isActive = (path: string) => {
   if (path === '/') return pathname === '/';
+  // Fix: Match general section for course content even if href is a deep link
+  if (path.startsWith('/course/') && pathname.startsWith('/course/')) return true;
   if (path.length > 1 && pathname.startsWith(path)) return true;
   return false;
 };
+
+const showFocusToggle = pathname.startsWith('/course/');
+const showPodcastToggle = pathname.startsWith('/course/');
 ---
 
 <nav class="floating-menu">
@@ -22,7 +27,8 @@ const isActive = (path: string) => {
       {NAVIGATION.map(item => {
         // Skip GitHub as we treat it specially with icon or allow it if desired. 
         // For now I'll check label to map icons manually or generic
-        let icon = "circle";
+        type MenuIcon = 'book-open' | 'graduation-cap' | 'terminal';
+        let icon: MenuIcon = 'book-open'; // Changed defaults to match valid Icon types
         if (item.label === "Curso") icon = "graduation-cap";
         if (item.label === "Playground") icon = "terminal";
         if (item.label === "GitHub") return null; // Handle manually below
@@ -38,12 +44,157 @@ const isActive = (path: string) => {
       <a href={SITE.github} target="_blank" class="nav-link">
         <Icon name="github" size={16} /> GITHUB
       </a>
+
+      {showFocusToggle && (
+        <button id="focus-toggle" class="nav-link focus-toggle" type="button" aria-pressed="false">
+          <Icon name="align-left" size={16} /> FOCO
+        </button>
+      )}
+
+      {showPodcastToggle && (
+        <button id="podcast-toggle" class="nav-link focus-toggle" type="button" aria-pressed="false">
+          <Icon name="play" size={16} /> PODCAST
+        </button>
+      )}
     </div>
   </div>
 </nav>
 
 <script>
   let cleanupFn: (() => void) | null = null;
+  let focusCleanupFn: (() => void) | null = null;
+  let podcastCleanupFn: (() => void) | null = null;
+
+  const FOCUS_KEY = 'focus-mode';
+  const PODCAST_KEY = 'podcast-mode';
+
+  function setFocusMode(enabled: boolean) {
+    document.body.classList.toggle('focus-mode', enabled);
+
+    const btn = document.getElementById('focus-toggle');
+    if (btn instanceof HTMLButtonElement) {
+      btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      btn.classList.toggle('active', enabled);
+    }
+
+    try {
+      localStorage.setItem(FOCUS_KEY, enabled ? '1' : '0');
+    } catch {}
+
+    const sidebar = document.querySelector('.sidebar');
+    if (enabled && sidebar instanceof HTMLElement) {
+      sidebar.classList.remove('mobile-open');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    // Fullscreen Logic
+    if (enabled) {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {
+          // Ignore failures (e.g. user interacting with popup)
+        });
+      }
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  }
+
+  function setupFocusToggle() {
+    if (focusCleanupFn) {
+      focusCleanupFn();
+      focusCleanupFn = null;
+    }
+
+    const btn = document.getElementById('focus-toggle');
+    if (!(btn instanceof HTMLButtonElement)) {
+      document.body.classList.remove('focus-mode');
+      return;
+    }
+
+    let enabled = false;
+    try {
+      enabled = localStorage.getItem(FOCUS_KEY) === '1';
+    } catch {}
+
+    // Apply initial state without forcing fullscreen immediately on page load
+    // (Browsers block automatic fullscreen without user interaction)
+    document.body.classList.toggle('focus-mode', enabled);
+    btn.classList.toggle('active', enabled);
+    btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    
+    // We do NOT call setFocusMode(enabled) here because it would trigger requestFullscreen()
+    // which fails on page load. We just sync the UI/CSS class.
+
+    const onClick = () => {
+      const next = !document.body.classList.contains('focus-mode');
+      setFocusMode(next);
+    };
+    
+    // Sync when user presses ESC or F11
+    const onFullscreenChange = () => {
+      const isFullscreen = !!document.fullscreenElement;
+      // If we exited fullscreen, disable focus mode
+      if (!isFullscreen && document.body.classList.contains('focus-mode')) {
+        setFocusMode(false);
+      }
+    };
+
+    btn.addEventListener('click', onClick);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    
+    focusCleanupFn = () => {
+      btn.removeEventListener('click', onClick);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+    };
+  }
+
+  function setPodcastMode(enabled: boolean) {
+    document.body.classList.toggle('podcast-mode', enabled);
+
+    const btn = document.getElementById('podcast-toggle');
+    if (btn instanceof HTMLButtonElement) {
+      btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      btn.classList.toggle('active', enabled);
+    }
+
+    try {
+      localStorage.setItem(PODCAST_KEY, enabled ? '1' : '0');
+    } catch {}
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('podcast-mode-change', { detail: { enabled } }));
+    }
+  }
+
+  function setupPodcastToggle() {
+    if (podcastCleanupFn) {
+      podcastCleanupFn();
+      podcastCleanupFn = null;
+    }
+
+    const btn = document.getElementById('podcast-toggle');
+    if (!(btn instanceof HTMLButtonElement)) {
+      document.body.classList.remove('podcast-mode');
+      return;
+    }
+
+    let enabled = false;
+    try {
+      enabled = localStorage.getItem(PODCAST_KEY) === '1';
+    } catch {}
+
+    setPodcastMode(enabled);
+
+    const onClick = () => {
+      const next = !document.body.classList.contains('podcast-mode');
+      setPodcastMode(next);
+    };
+
+    btn.addEventListener('click', onClick);
+    podcastCleanupFn = () => btn.removeEventListener('click', onClick);
+  }
 
   function setupScrollMenu() {
     // Cleanup previous listener
@@ -90,9 +241,18 @@ const isActive = (path: string) => {
 
   // Initialize on first load
   setupScrollMenu();
+  setupFocusToggle();
+  setupPodcastToggle();
+
+  // Allow other components (overlay) to close/open podcast mode without duplicar lógica
+  (window as any).__setPodcastMode = setPodcastMode;
 
   // Re-initialize on View Transitions navigation
-  document.addEventListener('astro:page-load', setupScrollMenu);
+  document.addEventListener('astro:page-load', () => {
+    setupScrollMenu();
+    setupFocusToggle();
+    setupPodcastToggle();
+  });
 </script>
 
 <style>
@@ -176,13 +336,29 @@ const isActive = (path: string) => {
     white-space: nowrap;
   }
 
+  .focus-toggle {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+
   .nav-link:hover {
     color: #fff;
     background: rgba(255,255,255,0.05);
   }
 
-  .nav-link.active {
+  /* Navigation Links Active State (Where I am) */
+  a.nav-link.active {
     color: #fff;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+    font-weight: 700;
+  }
+
+  /* Feature Toggles Active State (What is ON) */
+  button.nav-link.active {
+    background: rgba(74, 222, 128, 0.1);
+    color: #4ade80; /* Accent Green */
+    border: 1px solid rgba(74, 222, 128, 0.15);
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.1);
   }
 </style>

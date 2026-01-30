@@ -2,8 +2,9 @@ import { join } from "path";
 import { mkdir, writeFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 
-const TIMEOUT_MS = 15000; // 15s timeout
+const TIMEOUT_MS = 5000;
 const MAX_OUTPUT_SIZE = 100 * 1024; // 100KB output limit
+const MAX_CONCURRENT_JOBS = 4; // Limite rigoroso de concorrência
 
 export interface ExecuteRequest {
   files: { name: string; content: string }[];
@@ -23,129 +24,202 @@ export interface ExecuteResponse {
   error?: string;
 }
 
-/**
- * Executa código C usando Docker localmente.
- * Requer Docker instalado e rodando no host.
- */
-/**
- * Executa código C usando GCC localmente (Nativo).
- * Mais rápido e confiável em ambientes containerizados (sem problemas de volume Docker).
- * Requer: apt-get install gcc build-essential
- */
+// Fila de Execução Simples (Semaphore)
+class ExecutionQueue {
+  private active = 0;
+  private queue: (() => void)[] = [];
+
+  constructor(private max: number) {}
+
+  async acquire(): Promise<void> {
+    if (this.active < this.max) {
+      this.active++;
+      return;
+    }
+
+    return new Promise<void>((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release() {
+    this.active--;
+    if (this.queue.length > 0) {
+      const next = this.queue.shift();
+      if (next) {
+        this.active++;
+        next();
+      }
+    }
+  }
+
+  get stats() {
+    return { active: this.active, queued: this.queue.length };
+  }
+}
+
+const executionQueue = new ExecutionQueue(MAX_CONCURRENT_JOBS);
+
+// Filtro de Segurança (Heurística)
+function validateSecurity(code: string): string | null {
+  // Padrões perigosos
+  const forbidden = [
+    { pattern: /system\s*\(/, reason: "Chamada de sistema (system) proibida." },
+    { pattern: /fork\s*\(/, reason: "Criação de processos (fork) proibida." },
+    {
+      pattern: /exec(l|lp|le|v|vp|vpe)?\s*\(/,
+      reason: "Execução de binários proibida.",
+    },
+    { pattern: /popen\s*\(/, reason: "Pipes de comando proibidos." },
+    {
+      pattern: /<sys\/socket\.h>/,
+      reason: "Acesso à rede (sockets) bloqueado.",
+    },
+    { pattern: /<netinet\/in\.h>/, reason: "Acesso à rede bloqueado." },
+    // Bloquear loops infinitos óbvios (ex: while(1) sem break é difícil pegar com regex, mas while(true) ajuda)
+    // Isso é frágil, o timeout do processo é a proteção real, mas ajuda a educar.
+  ];
+
+  for (const rule of forbidden) {
+    if (rule.pattern.test(code)) {
+      return rule.reason;
+    }
+  }
+  return null;
+}
+
 export async function executeCode(
   req: ExecuteRequest,
 ): Promise<ExecuteResponse> {
   const timestamp = new Date().toISOString();
 
-  // 1. Criar diretório temporário isolado
-  const jobId = crypto.randomUUID();
-  const tempDir = join(process.cwd(), ".jobs", jobId);
+  // 0. Validação de Segurança Estática
+  for (const file of req.files) {
+    const error = validateSecurity(file.content);
+    if (error) {
+      return {
+        success: true, // Request ok, mas código rejeitado (Business Rule)
+        timestamp,
+        run: {
+          stdout: "",
+          stderr: `[Security] Violação detectada: ${error}\nEste ambiente é sandbox e restrito para fins educativos.`,
+          exitCode: 126, // Command invoked cannot execute
+        },
+      };
+    }
+  }
+
+  // 1. Controle de Concorrência
+  await executionQueue.acquire();
 
   try {
-    await mkdir(tempDir, { recursive: true });
+    // 2. Criar diretório isolado
+    const jobId = crypto.randomUUID();
+    const tempDir = join(process.cwd(), ".jobs", jobId); // Usar diretório local para evitar /tmp compartilhado inseguro
 
-    // 2. Gravar arquivos
-    for (const file of req.files) {
-      // Segurança básica de path e nome
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "");
-      await writeFile(join(tempDir, safeName), file.content);
-    }
+    try {
+      await mkdir(tempDir, { recursive: true });
 
-    if (req.stdin) {
-      await writeFile(join(tempDir, "input.txt"), req.stdin);
-    }
+      // 3. Gravar arquivos
+      for (const file of req.files) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "");
+        await writeFile(join(tempDir, safeName), file.content);
+      }
 
-    // 3. Script de Compilação e Execução (Nativo)
-    // Usa timeout do comando Linux para segurança extra contra loops infinitos binários
-    const runScriptContent = `
-    #!/bin/bash
-    # Compilar
-    gcc -fdiagnostics-color=always -Wall -Wextra -pthread -o app *.c -lm
-    COMPILE_STATUS=$?
-    
-    if [ $COMPILE_STATUS -ne 0 ]; then
-        exit 1
-    fi
-    
-    # Executar com limite de tempo (2s) via timeout do sistema se disponível, senão direto
-    if command -v timeout >/dev/null 2>&1; then
-        CMD="timeout 2s ./app"
-    else
-        CMD="./app"
-    fi
+      if (req.stdin) {
+        await writeFile(join(tempDir, "input.txt"), req.stdin);
+      }
 
-    if [ -f input.txt ]; then
-        $CMD < input.txt
-    else
-        $CMD
-    fi
-    `;
+      // 4. Script de Execução Otimizado
+      const runScriptContent = `
+      #!/bin/bash
+      # Limite de recursos (ulimit) se possível, para evitar fork bomb
+      ulimit -u 64 2>/dev/null 
+      
+      gcc -fdiagnostics-color=always -Wall -Wextra -pthread -o app *.c -lm
+      COMPILE_STATUS=$?
+      
+      if [ $COMPILE_STATUS -ne 0 ]; then
+          exit 1
+      fi
+      
+      # Execução segura
+      if [ -f input.txt ]; then
+          ./app < input.txt
+      else
+          ./app
+      fi
+      `;
 
-    await writeFile(
-      join(tempDir, "run.sh"),
-      runScriptContent.replace(/\r\n/g, "\n"),
-      { mode: 0o755 },
-    );
+      await writeFile(
+        join(tempDir, "run.sh"),
+        runScriptContent.replace(/\r\n/g, "\n"),
+        { mode: 0o755 },
+      );
 
-    // 4. Executar via Bun Spawn (Shell)
-    const startTime = performance.now();
+      // 5. Spawn Process
+      const proc = Bun.spawn(["bash", "run.sh"], {
+        cwd: tempDir,
+        stdin: null,
+        env: { ...process.env, PATH: process.env.PATH },
+      });
 
-    const proc = Bun.spawn(["bash", "run.sh"], {
-      cwd: tempDir,
-      stdin: null, // Input via arquivo
-      env: { ...process.env, PATH: process.env.PATH }, // Herda PATH para achar gcc
-    });
+      // 6. Timeout Handler
+      const timeoutSignal = AbortSignal.timeout(TIMEOUT_MS);
+      timeoutSignal.onabort = () => {
+        proc.kill();
+      };
 
-    // Timeout Killer (Nível Bun - Segurança redundante)
-    const timeoutSignal = AbortSignal.timeout(5000); // 5s hard limit (compilação + exec)
-    timeoutSignal.onabort = () => {
-      proc.kill();
-    };
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+      const exitCode = await proc.exited;
 
-    const stdout = await new Response(proc.stdout).text();
-    const stderr = await new Response(proc.stderr).text();
-    const exitCode = await proc.exited;
+      if (timeoutSignal.aborted) {
+        return {
+          success: true,
+          timestamp,
+          run: {
+            stdout: stdout.slice(0, MAX_OUTPUT_SIZE),
+            stderr:
+              stderr.slice(0, MAX_OUTPUT_SIZE) +
+              "\n\n[Sistema] Timeout (Limite de tempo excedido).",
+            exitCode: 124,
+            signal: "SIGKILL",
+          },
+        };
+      }
 
-    // Se timeout Bun disparou
-    if (timeoutSignal.aborted) {
       return {
         success: true,
         timestamp,
         run: {
           stdout: stdout.slice(0, MAX_OUTPUT_SIZE),
-          stderr:
-            stderr.slice(0, MAX_OUTPUT_SIZE) +
-            "\n\n[Sistema] Timeout (Processo morto externamente).",
-          exitCode: 124,
-          signal: "SIGKILL",
+          stderr: stderr.slice(0, MAX_OUTPUT_SIZE),
+          exitCode: exitCode ?? -1,
         },
       };
+    } finally {
+      // 7. Cleanup
+      // Executa rm no background sem await para liberar a resposta pro cliente mais rápido
+      // O sistema operacional lida bem com I/O assíncrono
+      rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
-
-    return {
-      success: true,
-      timestamp,
-      run: {
-        stdout: stdout.slice(0, MAX_OUTPUT_SIZE),
-        stderr: stderr.slice(0, MAX_OUTPUT_SIZE),
-        exitCode: exitCode ?? -1,
-      },
-    };
   } catch (err) {
     console.error("Execution Error:", err);
     return {
       success: false,
       timestamp,
-      error: "Falha na execução nativa do código.",
+      error: "Falha interna na execução.",
     };
   } finally {
-    // 5. Cleanup rápido
-    setTimeout(() => {
-      rm(tempDir, { recursive: true, force: true }).catch(() => {});
-    }, 500);
+    // 8. Liberar vaga na fila
+    executionQueue.release();
+
+    // Opcional: Log de carga
+    // console.log(`[Queue] Active: ${executionQueue.stats.active}, Queued: ${executionQueue.stats.queued}`);
   }
 }
 
 export async function getRuntimes() {
-  return [{ language: "c", version: "Docker GCC (Latest)", aliases: ["gcc"] }];
+  return [{ language: "c", version: "System GCC", aliases: ["gcc"] }];
 }

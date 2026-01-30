@@ -1,5 +1,10 @@
 # Aprenda C
 
+![CI Status](https://github.com/Capman002/aprenda-c/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/github/license/Capman002/aprenda-c)
+![Bun Version](https://img.shields.io/badge/Bun-v1.0%2B-black?logo=bun)
+![GitHub Stars](https://img.shields.io/github/stars/Capman002/aprenda-c?style=social)
+
 > Do Zero ao Embarcado: Fundamentos, Memória e Linguagens Modernas
 
 Plataforma educacional open-source focada em programação de baixo nível, arquitetura de sistemas e linguagens de alta performance. Ideal para estudantes e desenvolvedores que buscam dominar C, sistemas embarcados, Zig e Rust.

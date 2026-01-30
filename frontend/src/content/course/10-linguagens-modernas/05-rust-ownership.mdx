@@ -28,7 +28,7 @@ let s2 = s1;
 // println!("{}", s1); // ERRO!
 ```
 
-Em C++, `s2 = s1` faria uma cópia rasa (shallow copy), e ambos apontariam para a mesma memória. Se ambos derem `free`, tenho double-free.
+Em C++, `s2 = s1` faria uma cópia rasa (shallow copy), e ambos apontariam para a mesma memória. Se ambos derem `free`, ocorre um double-free.
 Em Rust, `s1` foi **MOVIDO** para `s2`. `s1` agora é inválido. O problema do double-free desaparece.
 
 ## Borrowing: Emprestando sem dar

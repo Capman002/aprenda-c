@@ -1,0 +1,124 @@
+---
+import CodeBox from '../CodeBox.astro';
+
+const demoCode = `#include <stdio.h>
+
+void secret(int *p) {
+    *p = *p + 42;
+}
+
+int main() {
+    int x = 10;
+    
+    printf("Antes: %d\\n", x);
+    secret(&x);
+    printf("Depois: %d\\n", x);
+    
+    return 0;
+}`;
+---
+
+<section class="live-demo-section">
+    <div class="container">
+        <div class="demo-wrapper">
+            <div class="demo-text">
+                <h2>O Playground é <br/><span class="text-highlight">Sua Arena</span></h2>
+                <p>
+                    Não assista apenas. Codifique. Nosso ambiente roda no navegador 
+                    compilando C real via WebAssembly.
+                </p>
+                <ul class="check-list">
+                    <li>Sem configuração de ambiente.</li>
+                    <li>Feedback imediato de memória.</li>
+                    <li>GCC behavior compliance.</li>
+                </ul>
+            </div>
+            
+            <div class="demo-box">
+               <CodeBox title="playground_demo.c" initialCode={demoCode} />
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .live-demo-section {
+        padding: 120px 24px;
+        background: radial-gradient(circle at 60% 50%, #101015 0%, #050505 50%);
+        border-top: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .container {
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    .demo-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+        align-items: center;
+    }
+
+    h2 {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.1;
+        margin-bottom: 24px;
+    }
+
+    .text-highlight {
+        color: #eab308; /* Yellow/Gold for variety */
+        display: block;
+    }
+
+    p {
+        color: #a1a1aa;
+        font-size: 1.1rem;
+        margin-bottom: 32px;
+        line-height: 1.6;
+    }
+
+    .check-list {
+        list-style: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .check-list li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #d4d4d8;
+        font-size: 1rem;
+    }
+
+    .check-list li::before {
+        content: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMyMmM1NWUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cG9seWxpbmUgcG9pbnRzPSIyMCA2IDkgMTcgNCAxMiIvPjwvc3ZnPg==');
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+    }
+
+    .demo-box {
+        box-shadow: 0 20px 50px -20px rgba(0,0,0,0.5);
+    }
+
+    @media (max-width: 900px) {
+        .demo-wrapper {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+
+        .check-list li {
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 2.5rem;
+        }
+    }
+</style>

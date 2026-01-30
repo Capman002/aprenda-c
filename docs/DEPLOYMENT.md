@@ -53,8 +53,7 @@ Instruções para deploy do Aprenda C em diferentes ambientes.
 4. **Variáveis de Ambiente**
 
    ```
-   NODE_ENV=production
-   PISTON_URL=https://emkc.org/api/v2/piston
+    NODE_ENV=production
    ```
 
 5. **Deploy**
@@ -70,6 +69,7 @@ WORKDIR /app
 
 # Copiar e instalar dependências
 COPY package.json bun.lock ./
+RUN apt-get update && apt-get install -y gcc build-essential
 RUN bun install --frozen-lockfile
 
 # Copiar código fonte
@@ -238,7 +238,6 @@ sudo certbot --nginx -d seu-dominio.com
 ```env
 NODE_ENV=production
 PORT=3000
-PISTON_URL=https://emkc.org/api/v2/piston
 ```
 
 ---
@@ -280,10 +279,10 @@ app.use(
 );
 ```
 
-### Piston API offline
+### Erro "gcc not found"
 
-- Verifique status: https://status.emkc.org
-- Considere self-hosting: https://github.com/engineer-man/piston
+- Certifique-se de que `build-essential` ou `gcc` está instalado no sistema anfitrião ou container.
+- Execute `gcc --version` para verificar.
 
 ---
 

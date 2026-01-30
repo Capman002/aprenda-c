@@ -54,15 +54,27 @@ function formatTitle(folder: string) {
 <aside class="sidebar">
   <!-- Header removido (Logo no FloatingMenu) -->
 
+  <div class="sidebar-gamification" data-gamification-summary>
+    <div class="g-row">
+      <span class="g-label">Nível</span>
+      <span class="g-value" data-g-level>—</span>
+    </div>
+    <div class="g-row">
+      <span class="g-label">XP</span>
+      <span class="g-value" data-g-xp>—</span>
+    </div>
+  </div>
+
   <nav class="nav-scroll" id="sidebar-nav">
 
     {Object.entries(groupedDocs).sort((a, b) => a[0].localeCompare(b[0])).map(([moduleTitle, docs]) => {
       
       return (
-        <div class="module-group">
+        <div class="module-group" data-module-group data-module-title={moduleTitle}>
           <div class="module-title">
             <Icon name={getIconForModule(moduleTitle)} size={14} />
             <span class="module-name">{moduleTitle}</span>
+            <span class="module-progress" data-module-progress>—</span>
           </div>
           
           <div class="module-links">
@@ -73,6 +85,7 @@ function formatTitle(folder: string) {
                   href={`/course/${doc.slug}`} 
                   class:list={['link-item', { active: isActive }]}
                   data-astro-prefetch
+                  data-topic-slug={doc.slug}
                 >
                   {doc.data.title}
                 </a>
@@ -86,17 +99,73 @@ function formatTitle(folder: string) {
 </aside>
 
 <script>
+  import { gameStore } from '../lib/gameStore';
+
   // Persist Sidebar Scroll Position
   const sidebarNav = document.getElementById('sidebar-nav');
   const STORAGE_KEY = 'sidebar-scroll-position';
 
+  function renderGamification() {
+    try {
+      const summary = document.querySelector('[data-gamification-summary]');
+      if (!(summary instanceof HTMLElement)) return;
+
+      const state = gameStore.getState();
+
+      const lvl = summary.querySelector('[data-g-level]');
+      const xp = summary.querySelector('[data-g-xp]');
+
+      if (lvl instanceof HTMLElement) lvl.textContent = String(state.level);
+      if (xp instanceof HTMLElement) xp.textContent = String(state.totalXp);
+
+      const topicLinks = Array.from(document.querySelectorAll('[data-topic-slug]'));
+      for (const a of topicLinks) {
+        if (!(a instanceof HTMLAnchorElement)) continue;
+        const slug = a.dataset.topicSlug;
+        if (typeof slug !== 'string') continue;
+
+        const completed = state.topics?.[slug]?.completed ?? false;
+        a.classList.toggle('completed', completed);
+      }
+
+      const moduleGroups = Array.from(document.querySelectorAll('[data-module-group]'));
+      for (const g of moduleGroups) {
+        if (!(g instanceof HTMLElement)) continue;
+        const links = Array.from(g.querySelectorAll('[data-topic-slug]'));
+        const total = links.length;
+        let done = 0;
+
+        for (const l of links) {
+          if (!(l instanceof HTMLAnchorElement)) continue;
+          const slug = l.dataset.topicSlug;
+          if (typeof slug !== 'string') continue;
+          if (state.topics?.[slug]?.completed) done++;
+        }
+
+        const p = g.querySelector('[data-module-progress]');
+        if (p instanceof HTMLElement) {
+          p.textContent = total > 0 ? `${done}/${total}` : '—';
+          p.dataset.state = total > 0 && done === total ? 'done' : done > 0 ? 'partial' : 'todo';
+        }
+      }
+    } catch (err) {
+      console.error('SmartSidebar: Error rendering gamification', err);
+    }
+  }
+
   // Restore scroll on load
   document.addEventListener('astro:page-load', () => {
-    const sidebarNav = document.getElementById('sidebar-nav');
-    const savedPosition = sessionStorage.getItem(STORAGE_KEY);
-    
-    if (sidebarNav && savedPosition) {
-      sidebarNav.scrollTop = parseInt(savedPosition, 10);
+    try {
+      const sidebarNav = document.getElementById('sidebar-nav');
+      const savedPosition = sessionStorage.getItem(STORAGE_KEY);
+      
+      if (sidebarNav && savedPosition) {
+        sidebarNav.scrollTop = parseInt(savedPosition, 10);
+      }
+
+      renderGamification();
+    } catch (e) {
+      console.error('SmartSidebar: Init error', e);
     }
   });
 
@@ -107,6 +176,9 @@ function formatTitle(folder: string) {
       sessionStorage.setItem(STORAGE_KEY, sidebarNav.scrollTop.toString());
     }
   });
+
+  window.addEventListener('gamification-update', renderGamification);
+
 </script>
 
 <style>
@@ -120,6 +192,39 @@ function formatTitle(folder: string) {
     flex-shrink: 0;
     padding-top: 32px; /* Reduced from 110px (Menu is centered, doesn't overlap) */
     z-index: 50; 
+  }
+
+  .sidebar-gamification {
+    margin: 0 20px 16px 20px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    display: grid;
+    gap: 8px;
+  }
+
+  .g-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .g-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .g-value {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
   }
 
   .nav-scroll {
@@ -166,6 +271,30 @@ function formatTitle(folder: string) {
     margin-bottom: 16px;
   }
 
+  .module-progress {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-tertiary);
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .module-progress[data-state="done"] {
+    color: #27e2a4;
+    border-color: rgba(39, 226, 164, 0.22);
+    background: rgba(39, 226, 164, 0.06);
+  }
+
+  .module-progress[data-state="partial"] {
+    color: var(--accent-blue);
+    border-color: rgba(50, 145, 255, 0.22);
+    background: rgba(50, 145, 255, 0.06);
+  }
+
   .module-name {
     font-size: 11px;
     text-transform: uppercase;
@@ -203,6 +332,23 @@ function formatTitle(folder: string) {
     background: linear-gradient(90deg, rgba(50, 145, 255, 0.1) 0%, rgba(0,0,0,0) 100%);
     border-left-color: var(--accent-blue);
     font-weight: 500;
+  }
+
+  .link-item.completed {
+    color: #e4e4e7;
+  }
+
+  .link-item.completed::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #27e2a4;
+    box-shadow: 0 0 8px rgba(39, 226, 164, 0.4);
   }
 
   @media (max-width: 768px) {

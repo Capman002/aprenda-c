@@ -1,0 +1,167 @@
+---
+import { SITE } from '../../site.config';
+import Icon from '../Icon.astro';
+
+const footerLinks = [
+    { title: "Projeto", links: [
+        { label: "Começar", href: "/course" },
+        { label: "Roadmap", href: "/roadmap" },
+        { label: "Changelog", href: "/changelog" }
+    ]},
+    { title: "Comunidade", links: [
+        { label: "GitHub", href: "https://github.com/skylers/projeto" },
+        { label: "Discord", href: "#" },
+        { label: "Contribuir", href: "/contributing" }
+    ]},
+    { title: "Legal", links: [
+        { label: "MIT License", href: "/license" },
+        { label: "Privacidade", href: "/privacy" }
+    ]}
+];
+---
+
+<footer class="site-footer">
+    <div class="container">
+        <div class="footer-top">
+            <div class="brand">
+                <span class="logo-text">{SITE.title}</span>
+                <p class="brand-desc">
+                    Forjando engenheiros de elite através do entendimento profundo da máquina.
+                </p>
+                <div class="socials">
+                    <a href="#" aria-label="GitHub"><Icon name="github" size={20}/></a>
+                    <a href="#" aria-label="LinkedIn"><Icon name="linkedin" size={20}/></a>
+                </div>
+            </div>
+
+            <div class="links-grid">
+                {footerLinks.map(group => (
+                    <div class="link-group">
+                        <h4>{group.title}</h4>
+                        <ul>
+                            {group.links.map(link => (
+                                <li><a href={link.href}>{link.label}</a></li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; {new Date().getFullYear()} {SITE.author}. Todos os direitos reservados.</p>
+        </div>
+    </div>
+</footer>
+
+<style>
+    .site-footer {
+        background: #020202;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        padding: 80px 24px 32px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .footer-top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 60px;
+        justify-content: space-between;
+        margin-bottom: 60px;
+    }
+
+    .brand {
+        max-width: 320px;
+    }
+
+    .logo-text {
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.25rem;
+        display: block;
+        margin-bottom: 16px;
+    }
+
+    .brand-desc {
+        color: #71717a;
+        line-height: 1.6;
+        margin-bottom: 24px;
+        font-size: 0.95rem;
+    }
+
+    .socials {
+        display: flex;
+        gap: 16px;
+    }
+
+    .socials a {
+        color: #a1a1aa;
+        transition: color 0.2s;
+    }
+
+    .socials a:hover {
+        color: #fff;
+    }
+
+    .links-grid {
+        display: flex;
+        gap: 60px;
+        flex-wrap: wrap;
+    }
+
+    .link-group h4 {
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    .link-group ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .link-group a {
+        color: #a1a1aa;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: color 0.2s;
+    }
+
+    .link-group a:hover {
+        color: #3b82f6;
+    }
+
+    .footer-bottom {
+        border-top: 1px solid rgba(255,255,255,0.05);
+        padding-top: 32px;
+        text-align: center;
+    }
+
+    .footer-bottom p {
+        color: #52525b;
+        font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+        .footer-top {
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .links-grid {
+            gap: 40px;
+            width: 100%;
+            justify-content: space-between;
+        }
+    }
+</style>

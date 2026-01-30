@@ -1,0 +1,281 @@
+---
+import Icon from '../Icon.astro';
+import NeuralBackground from '../ui/NeuralBackground.astro';
+---
+
+<section class="hero-section">
+    <!-- Dynamic Background -->
+    <div class="bg-effects">
+        <NeuralBackground
+            style="position: absolute; inset: 0; z-index: 0;"
+            color="#3b82f6"
+            speed={1.0}
+            particleCount={500}
+            trailOpacity={0.15}
+        />
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+
+    </div>
+
+    <div class="hero-content">
+        <div class="badge">
+            <Icon name="git-branch" size={14} />
+            <span>v0.0.1 Public Beta</span>
+        </div>
+        
+        <h1 class="hero-title">
+            Educação <span class="text-gradient">Open Source</span><br/>
+            para Engenharia de Baixo Nível
+        </h1>
+        
+        <p class="hero-desc">
+            Uma plataforma aberta e gratuita para dominar C, Assembly e Hardware.
+            Sem paywalls. Construído pela comunidade, para a comunidade.
+        </p>
+        
+        <div class="cta-group">
+            <a href="/course/contexto-historico/historia-programacao" class="btn btn-primary">
+                Começar a Ler <Icon name="arrow-right" size={18} />
+            </a>
+            <a href="https://github.com/skylers/projeto" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+                <Icon name="github" size={18} /> Star on GitHub
+            </a>
+        </div>
+
+        <div class="hero-footer-stats">
+            <div class="stat-item">
+                <span class="mono">MIT License</span>
+            </div>
+            <div class="stat-separator"></div>
+            <div class="stat-item">
+                <span class="mono">100% Free</span>
+            </div>
+            <div class="stat-separator"></div>
+            <div class="stat-item">
+                <span class="mono">Community Driven</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Section Layout */
+    .hero-section {
+        position: relative;
+        min-height: 100vh; /* Fallback */
+        min-height: 100dvh; /* Modern mobile browsers */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 120px 24px 60px;
+        overflow: hidden;
+        background: #050505;
+    }
+
+    /* Background Effects */
+    .bg-effects {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+
+
+    .glow {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.4;
+        animation: breath 8s ease-in-out infinite alternate;
+    }
+
+    .glow-1 {
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.5) 0%, transparent 70%);
+        top: -100px;
+        left: 20%;
+    }
+
+    .glow-2 {
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(147, 51, 234, 0.4) 0%, transparent 70%);
+        bottom: -100px;
+        right: 10%;
+        animation-delay: -4s;
+    }
+
+    @keyframes breath {
+        0% { transform: scale(1) translate(0, 0); opacity: 0.3; }
+        100% { transform: scale(1.1) translate(20px, -20px); opacity: 0.5; }
+    }
+
+    /* Content Styling */
+    .hero-content {
+        position: relative;
+        z-index: 10;
+        text-align: center;
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Badge */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 99px;
+        font-size: 0.875rem;
+        color: #e4e4e7;
+        margin-bottom: 32px;
+        backdrop-filter: blur(8px);
+    }
+
+    .badge-dot {
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+    }
+
+    /* Typography */
+    .hero-title {
+        font-size: 4.5rem;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        margin: 0 0 24px;
+        color: #fff;
+    }
+
+    .text-gradient {
+        background: linear-gradient(to right, #ffffff, #a1a1aa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+        font-size: 1.25rem;
+        color: #a1a1aa;
+        line-height: 1.6;
+        max-width: 640px;
+        margin: 0 auto 48px;
+    }
+
+    /* Buttons */
+    .cta-group {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 80px;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 32px;
+        height: 56px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .btn-primary {
+        background: #fff;
+        color: #000;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 40px -10px rgba(255,255,255,0.3);
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Stats Footer */
+    .hero-footer-stats {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding: 16px 32px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mono {
+        font-family: 'JetBrains Mono', monospace;
+        color: #71717a;
+        font-size: 0.85rem;
+        letter-spacing: -0.02em;
+    }
+
+    .stat-separator {
+        width: 1px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.75rem;
+        }
+
+        .cta-group {
+            flex-direction: column;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hero-footer-stats {
+            flex-direction: column;
+            width: 100%;
+            gap: 16px;
+            padding: 24px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .stat-separator {
+            display: none;
+        }
+        
+        .bg-effects {
+            opacity: 0.2; /* Less demanding on mobile GPU */
+        }
+    }
+</style>

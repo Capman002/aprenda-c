@@ -1,0 +1,208 @@
+---
+import Icon from '../Icon.astro';
+
+const modules = [
+    {
+        title: "Fundamentos de C",
+        desc: "Domine ponteiros, alocação de memória e structs sem segredos.",
+        icon: "code"
+    },
+    {
+        title: "Assembly & Arquitetura",
+        desc: "Entenda o ciclo de instrução, registradores e o stack frame.",
+        icon: "cpu"
+    },
+    {
+        title: "Algoritmos e Estruturas",
+        desc: "Implemente Hashmaps, Trees e Graphs do zero em C.",
+        icon: "git-branch"
+    },
+    {
+        title: "Sistemas Operacionais",
+        desc: "Threads, Mutex, Deadlocks e gerenciamento de processos.",
+        icon: "terminal"
+    }
+];
+---
+
+<section class="curriculum-section">
+    <div class="container">
+        <div class="header">
+            <span class="eyebrow">Open Courseware</span>
+            <h2>O Caminho da <span class="highlight">Borda</span></h2>
+        </div>
+
+        <div class="timeline">
+            {modules.map((mod, index) => (
+                <div class="timeline-item">
+                    <div class="timeline-marker">
+                        <div class="marker-circle mono">{index + 1}</div>
+                        <div class="marker-line"></div>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="module-card">
+                            <div class="card-icon">
+                                <Icon name={mod.icon as any} size={24} />
+                            </div>
+                            <div>
+                                <h3>{mod.title}</h3>
+                                <p>{mod.desc}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Add mono class */
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+<style>
+    .curriculum-section {
+        padding: 100px 24px;
+        background: #08080a;
+        position: relative;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    h2 {
+        font-size: 2.5rem;
+        color: #fff;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.875rem;
+        color: #3b82f6;
+        font-weight: 600;
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .highlight {
+        color: #3b82f6; /* Blue-500 */
+    }
+
+    /* Timeline */
+    .timeline {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .timeline-item {
+        display: flex;
+        gap: 24px;
+        position: relative;
+        padding-bottom: 48px;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-item:last-child .marker-line {
+        display: none;
+    }
+
+    .timeline-marker {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 40px;
+    }
+
+    .marker-circle {
+        width: 40px;
+        height: 40px;
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #71717a;
+        z-index: 2;
+    }
+
+    .timeline-item:hover .marker-circle {
+        border-color: #3b82f6;
+        color: #fff;
+        background: #3b82f6;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .marker-line {
+        width: 2px;
+        background: #27272a;
+        flex-grow: 1;
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+
+    .timeline-content {
+        flex-grow: 1;
+        padding-top: 4px;
+    }
+
+    /* Module Card */
+    .module-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        transition: all 0.3s ease;
+    }
+
+    .module-card:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateX(10px);
+    }
+
+    .card-icon {
+        color: #a1a1aa;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .module-card:hover .card-icon {
+        color: #3b82f6;
+    }
+
+    h3 {
+        margin: 0 0 8px;
+        color: #fff;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    p {
+        margin: 0;
+        color: #a1a1aa;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+</style>

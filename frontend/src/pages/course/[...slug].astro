@@ -1,6 +1,11 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
 import DocLayout from '@layouts/DocLayout.astro';
+import TopicProgressControls from '../../components/TopicProgressControls.astro';
+import ModuleExamGate from '../../components/ModuleExamGate.astro';
+import PodcastOverlay from '../../components/PodcastOverlay.astro';
+import { getModuleExamId, getModuleId, quizzes } from '../../lib/quizBank';
+import { getPodcastAudioUrl } from '../../lib/podcastCatalog';
 
 // 1. Gera as rotas estáticas para TODAS as páginas do curso
 export async function getStaticPaths() {
@@ -45,8 +50,70 @@ import Callout from '../../components/Callout.astro';
 
 const { entry, prev, next } = Astro.props;
 const { Content, headings } = await entry.render();
+
+const topicSlug = entry.slug;
+const audioOrusUrl = getPodcastAudioUrl(topicSlug, 'orus');
+const audioLedaUrl = getPodcastAudioUrl(topicSlug, 'leda');
+
+const moduleTitle = entry.data.module;
+const moduleTitleText = moduleTitle ?? '';
+
+const moduleId = moduleTitle ? getModuleId(moduleTitle) : null;
+const moduleExamId = moduleTitle ? getModuleExamId(moduleTitle) : null;
+const moduleExam = moduleExamId ? quizzes[moduleExamId] : undefined;
+
+const allCourseEntries = await getCollection('course');
+const moduleTopicSlugs = moduleTitle
+  ? allCourseEntries
+      .filter((e) => e.data.module === moduleTitle)
+      .sort((a, b) => a.data.order - b.data.order)
+      .map((e) => e.slug)
+  : [];
+
+const getModNum = (t?: string) => {
+  const m = t?.match(/Módulo (\d+)/);
+  return m ? parseInt(m[1], 10) : 999;
+};
+
+const coursePlaylist = allCourseEntries
+  .slice()
+  .sort((a, b) => {
+    const modA = getModNum(a.data.module);
+    const modB = getModNum(b.data.module);
+    
+    if (modA !== modB) {
+      return modA - modB;
+    }
+    return a.data.order - b.data.order;
+  })
+  .map((e) => ({
+    slug: e.slug,
+    title: e.data.title,
+    moduleTitle: e.data.module ?? '',
+    audioOrusUrl: getPodcastAudioUrl(e.slug, 'orus'),
+    audioLedaUrl: getPodcastAudioUrl(e.slug, 'leda'),
+  }));
 ---
 
 <DocLayout frontmatter={entry.data} prev={prev} next={next} headings={headings}>
   <Content components={{ Callout }} />
+  <TopicProgressControls topicSlug={topicSlug} />
+  {moduleId && moduleExam && (
+    <ModuleExamGate
+      moduleId={moduleId}
+      moduleTitle={moduleTitleText}
+      topicSlugs={moduleTopicSlugs}
+      exam={moduleExam}
+    />
+  )}
+
+  <PodcastOverlay
+    slot="overlay"
+    topicSlug={topicSlug}
+    topicTitle={entry.data.title}
+    moduleTitle={moduleTitleText}
+    audioOrusUrl={audioOrusUrl}
+    audioLedaUrl={audioLedaUrl}
+    playlist={coursePlaylist}
+  />
 </DocLayout>

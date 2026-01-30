@@ -1,0 +1,1045 @@
+---
+import { navigate } from 'astro:transitions/client';
+import Icon from './Icon.astro';
+import adAudioUrl1 from '../content/podcast/anuncios/anuncio-01-aprendac.mp3';
+import adAudioUrl2 from '../content/podcast/anuncios/anuncio-02-aprendac.mp3';
+
+interface Props {
+  topicSlug: string;
+  topicTitle: string;
+  moduleTitle?: string;
+  audioOrusUrl: string | null;
+  audioLedaUrl: string | null;
+  playlist: Array<{
+    slug: string;
+    title: string;
+    moduleTitle?: string;
+    audioOrusUrl: string | null;
+    audioLedaUrl: string | null;
+  }>;
+}
+
+const { topicSlug, topicTitle, moduleTitle, audioOrusUrl, audioLedaUrl, playlist } =
+  Astro.props;
+
+const playlistSections = playlist.reduce(
+  (acc, t) => {
+    const key = (t.moduleTitle ?? '').trim() || 'Curso';
+    const last = acc[acc.length - 1];
+    if (!last || last.moduleTitle !== key) {
+      acc.push({ moduleTitle: key, tracks: [t] });
+      return acc;
+    }
+    last.tracks.push(t);
+    return acc;
+  },
+  [] as Array<{ moduleTitle: string; tracks: Props['playlist'] }>,
+);
+---
+
+<div
+  class="podcast-overlay"
+  data-podcast-overlay
+  transition:persist="podcast-overlay"
+  data-topic-slug={topicSlug}
+  data-topic-title={topicTitle}
+  data-module-title={moduleTitle ?? ''}
+  data-audio-orus={audioOrusUrl ?? ''}
+  data-audio-leda={audioLedaUrl ?? ''}
+  data-ad-url-1={adAudioUrl1}
+  data-ad-url-2={adAudioUrl2}
+>
+  <div class="podcast-shell" role="dialog" aria-modal="false" aria-label="Modo podcast">
+    <aside class="podcast-sidebar">
+      <div class="podcast-header">
+        <div class="podcast-meta">
+          <div class="meta-kicker" data-now-module>{moduleTitle}</div>
+          <div class="meta-title" data-now-title>{topicTitle}</div>
+        </div>
+        
+        <button type="button" class="close-btn" data-podcast-close aria-label="Fechar">
+          <kbd class="kbd-esc">ESC</kbd>
+          <Icon name="x" size={20} />
+        </button>
+      </div>
+
+      <div class="stats-stripe" data-podcast-gamification>
+        <div class="stat-item">
+          <span class="stat-label">Nível</span>
+          <span class="stat-value" data-g-level>—</span>
+        </div>
+        <div class="stat-separator"></div>
+        <div class="stat-item">
+          <span class="stat-label">XP</span>
+          <span class="stat-value" data-g-xp>—</span>
+        </div>
+        <div class="stat-separator"></div>
+        <div class="stat-item">
+          <span class="stat-label">Progresso</span>
+          <span class="stat-value text-accent" data-g-audio>—</span>
+        </div>
+      </div>
+
+      <div class="playlist-container" aria-label="Playlist">
+        {playlistSections.map((section) => (
+          <div class="playlist-group">
+            <div class="group-header">{section.moduleTitle}</div>
+            <div class="group-tracks">
+              {section.tracks.map((t, i) => (
+                <button
+                  type="button"
+                  class={`track-item ${t.slug === topicSlug ? 'is-active' : ''}`}
+                  data-track
+                  data-track-slug={t.slug}
+                  data-track-title={t.title}
+                  data-track-module-title={t.moduleTitle ?? ''}
+                  data-track-audio-orus={t.audioOrusUrl ?? ''}
+                  data-track-audio-leda={t.audioLedaUrl ?? ''}
+                >
+                  <div class="track-status">
+                    <div class="equalizer">
+                      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                    </div>
+                    <span class="track-num">{String(i + 1).padStart(2, '0')}</span>
+                  </div>
+                  
+                  <div class="track-info">
+                    <div class="track-name">{t.title}</div>
+                  </div>
+
+                  <div class="track-actions">
+                     <div class="status-icon completed-icon">
+                       <Icon name="check-circle" size={14} />
+                     </div>
+                     {(t.audioOrusUrl || t.audioLedaUrl) && <div class="indicator-dot"></div>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </aside>
+
+    <div class="podcast-viewport" aria-hidden="true"></div>
+
+    <footer class="podcast-controls" aria-label="Player">
+      <div class="controls-track-info">
+        <div class="cover-art">
+          <div class="cover-icon">
+            <Icon name="play" size={20} />
+          </div>
+        </div>
+        <div class="meta">
+          <div class="track-main" data-player-title>{topicTitle}</div>
+          <div class="track-sub" data-player-subtitle>{moduleTitle}</div>
+        </div>
+      </div>
+
+      <div class="controls-main">
+        <div class="transport">
+          <button type="button" class="btn-transport sm" data-player-prev aria-label="Anterior">
+            <Icon name="skip-back" size={20} />
+          </button>
+          
+          <button type="button" class="btn-play" data-player-play aria-label="Play/Pause">
+            <Icon name="play" size={22} class="icon-play" fill="#000" stroke-width="0" />
+            <Icon name="pause" size={22} class="icon-pause" fill="#000" stroke-width="0" />
+          </button>
+
+          <button type="button" class="btn-transport sm" data-player-next aria-label="Próximo">
+            <Icon name="skip-forward" size={20} />
+          </button>
+        </div>
+
+        <div class="scrubber">
+          <span class="time-readout" data-time-current>0:00</span>
+          <div class="scrubber-rail">
+            <input class="scrubber-input" data-player-progress type="range" min="0" max="100" value="0" step="0.1" />
+          </div>
+          <span class="time-readout" data-time-duration>0:00</span>
+        </div>
+      </div>
+
+      <div class="controls-extras">
+        <div class="voice-selector" role="tablist" aria-label="Voz">
+          <button type="button" class="voice-chip" data-voice="orus">Orus</button>
+          <button type="button" class="voice-chip" data-voice="leda">Leda</button>
+        </div>
+
+        <div class="volume-slider">
+          <Icon name="volume-2" size={16} class="vol-icon" />
+          <input class="vol-input" data-player-volume type="range" min="0" max="1" value="1" step="0.01" aria-label="Volume" />
+        </div>
+      </div>
+    </footer>
+
+    <audio class="podcast-audio" data-podcast-audio preload="none"></audio>
+  </div>
+</div>
+
+<script>
+  import { gameStore } from '../lib/gameStore';
+  import { navigate } from 'astro:transitions/client';
+  import { PodcastController, type Track } from '../lib/podcast/PodcastController';
+
+  declare global {
+    interface Window {
+      __podcastOverlayBoot?: boolean;
+      __setPodcastMode?: (enabled: boolean) => void;
+    }
+  }
+
+  // Helper functions
+  function formatTime(totalSeconds: number) {
+    if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return '0:00';
+    const s = Math.floor(totalSeconds);
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, '0')}`;
+  }
+
+  function formatPct(value: number) {
+      if (!Number.isFinite(value) || value <= 0) return '0%';
+      return `${Math.round(value * 100)}%`;
+  }
+
+  function setPodcastMode(enabled: boolean) {
+    try { localStorage.setItem('podcast-mode', enabled ? '1' : '0'); } catch {}
+    const fn = window.__setPodcastMode;
+    if (typeof fn === 'function') {
+      fn(enabled); return;
+    }
+    document.body.classList.toggle('podcast-mode', enabled);
+    window.dispatchEvent(new CustomEvent('podcast-mode-change', { detail: { enabled } }));
+  }
+
+  function renderGamification(state: any, duration?: number, currentTime?: number) {
+    const panel = document.querySelector('[data-podcast-gamification]');
+    if (!panel) return;
+
+    const lvl = panel.querySelector('[data-g-level]');
+    if (lvl) lvl.textContent = String(state.level);
+    
+    const xp = panel.querySelector('[data-g-xp]');
+    if (xp) xp.textContent = String(state.totalXp);
+
+    const a = panel.querySelector('[data-g-audio]');
+    if (a) {
+        if (duration && duration > 0 && currentTime !== undefined) {
+             a.textContent = `${formatPct(currentTime / duration)}`;
+        } else {
+             a.textContent = '—';
+        }
+    }
+    
+    // Update Playlist Checks
+    const trackButtons = document.querySelectorAll('[data-track]');
+    trackButtons.forEach((b) => {
+      if (!(b instanceof HTMLElement)) return;
+      const slug = b.dataset.trackSlug;
+      if (!slug) return;
+      
+      const topic = state.topics[slug];
+      const isCompleted = topic?.completed ?? false;
+      b.classList.toggle('is-completed', isCompleted);
+    });
+  }
+
+  // --- Main Setup ---
+  function setupPodcastOverlay() {
+    const overlay = document.querySelector('[data-podcast-overlay]') as HTMLElement | null;
+    if (!overlay) return;
+
+    // Check if already initialized on this DOM element (View Transition persistence)
+    // We attach the controller to the DOM element to keep using the same instance
+    if ((overlay as any)._controller) {
+        const ctrl = (overlay as any)._controller as PodcastController;
+        // Re-sync with URL logic just in case?
+        // Actually, we should check if current page changed and update playlist highlighting if needed.
+        // But let's keep it simple: rebuild playlist if needed?
+        // The overlay props update on astro page load? No, persistent elements don't get new props automatically if they persist.
+        // We have to rely on data-attributes being updated? With transition:persist, Astro might NOT update props.
+        // But we can detect URL change.
+        return;
+    }
+
+    const audio = overlay.querySelector('[data-podcast-audio]') as HTMLAudioElement;
+    const adUrl1 = overlay.dataset.adUrl1 || '';
+    const adUrl2 = overlay.dataset.adUrl2 || '';
+
+    const controller = new PodcastController(audio, adUrl1, adUrl2);
+    (overlay as any)._controller = controller;
+
+    // Build Playlist
+    const trackButtons = Array.from(overlay.querySelectorAll('[data-track]')) as HTMLButtonElement[];
+    const playlist: Track[] = trackButtons.map(b => ({
+        slug: b.dataset.trackSlug!,
+        title: b.dataset.trackTitle!,
+        moduleTitle: b.dataset.trackModuleTitle,
+        audioOrus: b.dataset.trackAudioOrus,
+        audioLeda: b.dataset.trackAudioLeda
+    }));
+    controller.setPlaylist(playlist);
+
+    // Initial Active Track from DOM (current page)
+    const currentSlug = overlay.dataset.topicSlug;
+    if (currentSlug) {
+        controller.loadTrackBySlug(currentSlug); 
+        // Note: loadTrackBySlug might trigger autoplay if not careful, but we control that in Controller.
+        // Actually we want to just SELECT it, not play. 
+        // The controller handles this by checking isPlaying.
+    }
+
+    // --- UI Elements ---
+    const playBtn = overlay.querySelector('[data-player-play]') as HTMLButtonElement;
+    const prevBtn = overlay.querySelector('[data-player-prev]') as HTMLButtonElement;
+    const nextBtn = overlay.querySelector('[data-player-next]') as HTMLButtonElement;
+    const progress = overlay.querySelector('[data-player-progress]') as HTMLInputElement;
+    const vol = overlay.querySelector('[data-player-volume]') as HTMLInputElement;
+    const timeCurrent = overlay.querySelector('[data-time-current]');
+    const timeDuration = overlay.querySelector('[data-time-duration]');
+    
+    // Titles
+    const nowTitle = overlay.querySelector('[data-now-title]');
+    const nowModule = overlay.querySelector('[data-now-module]');
+    const playerTitle = overlay.querySelector('[data-player-title]');
+    const playerSubtitle = overlay.querySelector('[data-player-subtitle]');
+    
+    const voiceButtons = Array.from(overlay.querySelectorAll('[data-voice]')) as HTMLButtonElement[];
+
+    // --- Connect UI to Controller ---
+
+    controller.onStateChange = () => {
+        const state = controller.state;
+        
+        // Play Button
+        if (playBtn) playBtn.classList.toggle('is-playing', state.isPlaying);
+        
+        // Progress
+        if (timeCurrent) timeCurrent.textContent = formatTime(state.currentTime);
+        if (timeDuration) timeDuration.textContent = formatTime(state.duration);
+        
+        if (progress) {
+             const dur = state.duration || 100;
+             const pct = dur > 0 ? (state.currentTime / dur) : 0;
+             progress.max = String(dur);
+             progress.value = String(state.currentTime);
+             progress.disabled = state.isAdPlaying;
+             
+             if (progress.parentElement) {
+                 progress.parentElement.style.setProperty('--pct', `${pct * 100}%`);
+             }
+        }
+        
+        // Voice Buttons
+        voiceButtons.forEach(b => {
+             const v = b.dataset.voice;
+             const isActive = v === state.currentVoice;
+             b.classList.toggle('active', isActive);
+             
+             let disabled = state.isAdPlaying;
+             if (!disabled && v === 'orus' && !state.canOrus) disabled = true;
+             if (!disabled && v === 'leda' && !state.canLeda) disabled = true;
+             b.disabled = disabled;
+        });
+
+        // Navigation Buttons
+        if (prevBtn) prevBtn.disabled = state.isAdPlaying;
+        if (nextBtn) nextBtn.disabled = state.isAdPlaying;
+        
+        // Tracks Active State
+        trackButtons.forEach(b => {
+             const isCurrent = state.currentTrack && b.dataset.trackSlug === state.currentTrack.slug;
+             b.classList.toggle('is-active', !!isCurrent);
+        });
+
+        // Gamification Data Update (Audio Progress)
+        renderGamification(gameStore.getState(), state.duration, state.currentTime);
+        
+        // Text Info (Ad vs Content)
+        if (state.isAdPlaying) {
+             if (playerTitle) playerTitle.textContent = "Mensagem do Sistema";
+             if (playerSubtitle) playerSubtitle.textContent = "Apoie o Projeto"; // Generic
+        } else if (state.currentTrack) {
+             if (playerTitle) playerTitle.textContent = state.currentTrack.title;
+             if (playerSubtitle) playerSubtitle.textContent = state.currentTrack.moduleTitle ?? '';
+             
+             if (nowTitle) nowTitle.textContent = state.currentTrack.title;
+             if (nowModule) nowModule.textContent = state.currentTrack.moduleTitle ?? '';
+        }
+    };
+
+    controller.onTrackChange = (track) => {
+         if (track) {
+              const newUrl = `/course/${track.slug}`;
+              if (!window.location.pathname.includes(track.slug)) {
+                   navigate(newUrl);
+              }
+         }
+    };
+
+    // --- Inputs -> Controller ---
+    playBtn?.addEventListener('click', () => controller.togglePlay());
+    prevBtn?.addEventListener('click', () => controller.prevTrack());
+    nextBtn?.addEventListener('click', () => controller.nextTrack());
+    
+    progress?.addEventListener('input', () => {
+         const val = Number(progress.value);
+         controller.seek(val);
+    });
+    
+    vol?.addEventListener('input', () => {
+         controller.setVolume(Number(vol.value));
+    });
+
+    voiceButtons.forEach(b => {
+         b.addEventListener('click', () => {
+             const v = b.dataset.voice as "orus" | "leda";
+             controller.setVoice(v);
+         });
+    });
+
+    trackButtons.forEach(b => {
+         b.addEventListener('click', () => {
+              controller.loadTrackBySlug(b.dataset.trackSlug!);
+              controller.play(); // Explicit click means play
+         });
+    });
+    
+    // Close / Esc
+    const closeTargets = overlay.querySelectorAll('[data-podcast-close]');
+    closeTargets.forEach(t => t.addEventListener('click', () => {
+        controller.pause();
+        setPodcastMode(false);
+    }));
+
+    // Initial Render
+    controller.onStateChange();
+    renderGamification(gameStore.getState());
+  }
+
+  // --- Global Listeners ---
+  if (!window.__podcastOverlayBoot) {
+    window.__podcastOverlayBoot = true;
+    document.addEventListener('astro:page-load', setupPodcastOverlay);
+    
+    // Gamification external updates
+    window.addEventListener('gamification-update', () => {
+         renderGamification(gameStore.getState());
+    });
+    
+    // Keyboard helpers
+    document.addEventListener('keydown', (e) => {
+         if (e.key === 'Escape' && document.body.classList.contains('podcast-mode')) {
+             setPodcastMode(false);
+             // Pause control? We need access to controller instance.
+             const ol = document.querySelector('[data-podcast-overlay]');
+             if (ol && (ol as any)._controller) {
+                 ((ol as any)._controller as PodcastController).pause();
+             }
+         }
+    });
+  }
+  
+  // Also run immediately
+  setupPodcastOverlay();
+</script>
+
+<style>
+  /* Add checkmark styles */
+  .completed-icon {
+    display: none;
+    color: #4ade80;
+    margin-right: -4px;
+  }
+
+  .track-item.is-completed .completed-icon {
+    display: block;
+  }
+
+  /* --- OVERLAY & LAYOUT --- */
+  .podcast-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    font-family: 'Inter', system-ui, sans-serif;
+    pointer-events: none; /* Allow clicking through to page content */
+  }
+  
+  .podcast-overlay[data-initialized='true'] {
+    /* Ready */
+  }
+
+  :global(body.podcast-mode) .podcast-overlay {
+    display: block;
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  :global(body.podcast-mode) {
+    overflow: auto !important; 
+  }
+
+  /* Deep Glass Background - Adjusted for readability */
+  .podcast-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4); 
+    backdrop-filter: blur(2px);
+    backdrop-filter: none;
+    z-index: 0;
+    opacity: 0; 
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  /* Gradient Atmosphere */
+  .podcast-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 0% 0%, rgba(50, 145, 255, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(39, 226, 164, 0.04) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .podcast-shell {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-rows: 1fr 96px;
+    height: 100vh;
+    pointer-events: none; /* Shell itself is pass-through */
+  }
+
+  /* --- SIDEBAR --- */
+  .podcast-sidebar {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    background: rgba(10, 10, 12, 0.95);
+    backdrop-filter: blur(40px) saturate(180%);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    gap: 24px;
+    box-shadow: 20px 0 60px rgba(0, 0, 0, 0.4);
+    pointer-events: auto; /* Restore interaction */
+  }
+
+  .podcast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .meta-kicker {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 6px;
+  }
+
+  .meta-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #fff;
+    background: linear-gradient(to bottom right, #fff, #ccc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .close-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .close-btn:hover {
+    color: #fff;
+  }
+
+  .kbd-esc {
+    font-size: 10px;
+    font-weight: 700;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 2px 4px;
+    opacity: 0.6;
+  }
+
+  /* --- STATS STRIPE --- */
+  .stats-stripe {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .stat-separator {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    font-feature-settings: 'tnum';
+  }
+
+  .text-accent {
+    color: #4ade80;
+    text-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+  }
+
+  /* --- PLAYLIST --- */
+  .playlist-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px; /* Space for scrollbar */
+    min-height: 0; /* Critical for flex scrolling */
+  }
+  
+  .playlist-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .playlist-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  
+  .playlist-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  .playlist-group {
+    margin-bottom: 24px;
+  }
+
+  .group-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-left: 12px;
+    margin-top: 24px;
+    position: sticky;
+    top: 0;
+    background: rgba(10, 10, 12, 0.95); /* Match sidebar bg */
+    z-index: 10;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    margin-top: 0; /* Adjusted for sticky */
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .group-tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .track-item {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    text-align: left;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .track-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: #fff;
+  }
+
+  .track-item.is-active {
+    background: rgba(30, 30, 35, 0.8);
+    border-color: rgba(255, 255, 255, 0.08); /* Slightly lighter border */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: #fff;
+  }
+
+  .track-num {
+    font-size: 11px;
+    font-family: monospace;
+    opacity: 0.4;
+    display: block;
+  }
+
+  .track-item.is-active .track-num {
+    display: none;
+  }
+
+  .equalizer {
+    display: none;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+  }
+
+  .track-item.is-active .equalizer {
+    display: flex;
+  }
+
+  .equalizer .bar {
+    width: 2px;
+    background: #4ade80;
+    animation: equalize 1s infinite alternate;
+  }
+  .equalizer .bar:nth-child(2) { animation-delay: 0.2s; height: 60%; }
+  .equalizer .bar:nth-child(3) { animation-delay: 0.4s; height: 30%; }
+
+  @keyframes equalize {
+    0% { height: 30%; }
+    100% { height: 100%; }
+  }
+
+  .track-name {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .track-item.is-active .indicator-dot {
+    background: #4ade80;
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+  }
+
+  /* --- PLAYER BAR --- */
+  .podcast-controls {
+    grid-column: 2;
+    grid-row: 2;
+    background: rgba(18, 18, 20, 0.75);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(auto, 600px) minmax(0, 1fr);
+    align-items: center;
+    padding: 0 24px;
+    gap: 24px;
+    min-width: 0;
+    pointer-events: auto; /* Allow interaction with controls */
+  }
+
+  .controls-track-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .cover-art {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #222, #333);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.2);
+  }
+
+  .meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .track-main {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .track-sub {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .controls-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 600px;
+    justify-self: center;
+  }
+
+  .transport {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .btn-transport {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 8px;
+    border-radius: 50%;
+  }
+  
+  .btn-transport:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .btn-play {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    color: #000;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-play:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Optical alignment for play icon */
+  .btn-play .icon-play { 
+    display: block; 
+    margin-left: 4px; /* Fix optical center of triangle */
+  }
+  .btn-play.is-playing .icon-play { display: none; }
+  
+  .btn-play .icon-pause { display: none; }
+  .btn-play.is-playing .icon-pause { display: block; }
+
+  .scrubber {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .scrubber-rail {
+    flex: 1;
+    position: relative;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+  }
+
+  .scrubber-input {
+    position: absolute;
+    inset: -6px 0;
+    width: 100%;
+    height: 16px;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+  }
+  
+  .scrubber-rail::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--pct, 0%);
+    background: #fff;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  .time-readout {
+    font-size: 11px;
+    font-family: monospace;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.4);
+    min-width: 32px;
+  }
+
+  .controls-extras {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .voice-selector {
+    display: flex;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .voice-chip {
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .voice-chip:hover {
+    color: #fff;
+  }
+
+  .voice-chip.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  .voice-chip:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+
+  .volume-slider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .vol-icon {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .vol-input {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+  }
+  
+  .vol-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @media (max-width: 1200px) {
+    .podcast-controls {
+      grid-template-columns: minmax(0, 1fr) minmax(auto, 400px) minmax(0, 1fr);
+      gap: 16px;
+    }
+    
+    .volume-slider { width: 80px; }
+  }
+
+  @media (max-width: 900px) {
+    .podcast-shell {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr 140px;
+    }
+
+    .podcast-controls {
+      grid-column: 1;
+      grid-row: 2;
+      grid-template-columns: 1fr;
+      padding: 16px;
+      gap: 16px;
+      height: auto;
+    }
+
+    .controls-track-info {
+      display: none; /* Hide metadata on mobile to save space or move it */
+    }
+
+    .controls-extras {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+</style>

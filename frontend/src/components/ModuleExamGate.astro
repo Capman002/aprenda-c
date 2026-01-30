@@ -1,0 +1,210 @@
+---
+import QuizBlock from "./QuizBlock.astro";
+import type { QuizDefinition } from "../lib/quizBank";
+
+interface Props {
+  moduleId: string;
+  moduleTitle: string;
+  topicSlugs: string[];
+  exam: QuizDefinition;
+}
+
+const { moduleId, moduleTitle, topicSlugs, exam } = Astro.props;
+---
+
+<section
+  class="module-exam"
+  data-module-exam
+  data-module-id={moduleId}
+  data-module-title={moduleTitle}
+  data-topic-slugs={JSON.stringify(topicSlugs)}
+>
+  <header class="module-exam-header">
+    <div class="module-exam-title">Prova do Módulo</div>
+    <div class="module-exam-subtitle">{moduleTitle}</div>
+  </header>
+
+  <div class="module-exam-gate" data-module-gate>
+    <div class="gate-card" data-gate-card>
+      <div class="gate-row">
+        <div class="gate-kpi">
+          <div class="kpi-label">Progresso do módulo</div>
+          <div class="kpi-value" data-kpi-progress>—</div>
+        </div>
+        <div class="gate-kpi">
+          <div class="kpi-label">Status</div>
+          <div class="kpi-value" data-kpi-status>—</div>
+        </div>
+      </div>
+      <div class="gate-message" data-gate-message>
+        Conclua todos os tópicos deste módulo para desbloquear a prova.
+      </div>
+    </div>
+  </div>
+
+  <div class="module-exam-content" data-module-exam-content hidden>
+    <QuizBlock quiz={exam} mode="module" moduleId={moduleId} />
+  </div>
+</section>
+
+<script>
+  import { gameStore } from "../lib/gameStore";
+
+  function init(root: HTMLElement) {
+    if (!(root instanceof HTMLElement)) return;
+    if (root.dataset.initialized === "true") return;
+    root.dataset.initialized = "true";
+
+    const topicSlugsRaw = root.dataset.topicSlugs;
+    const moduleTitle = root.dataset.moduleTitle || "";
+
+    let topicSlugs: string[] = [];
+    try {
+      topicSlugs = JSON.parse(topicSlugsRaw || "[]");
+    } catch {
+      topicSlugs = [];
+    }
+
+    const progressEl = root.querySelector("[data-kpi-progress]");
+    const statusEl = root.querySelector("[data-kpi-status]");
+    const messageEl = root.querySelector("[data-gate-message]");
+    const contentEl = root.querySelector("[data-module-exam-content]");
+
+    function render() {
+      const state = gameStore.getState();
+      const total = Array.isArray(topicSlugs) ? topicSlugs.length : 0;
+      let done = 0;
+
+      if (Array.isArray(topicSlugs)) {
+        for (const slug of topicSlugs) {
+          if (typeof slug !== "string") continue;
+          if (state.topics?.[slug]?.completed) done++;
+        }
+      }
+
+      const unlocked = total > 0 && done === total;
+
+      if (progressEl instanceof HTMLElement) {
+        progressEl.textContent = total > 0 ? `${done}/${total}` : "—";
+      }
+
+      if (statusEl instanceof HTMLElement) {
+        statusEl.textContent = unlocked ? "Desbloqueado" : "Bloqueado";
+        statusEl.dataset.state = unlocked ? "unlocked" : "locked";
+      }
+
+      if (messageEl instanceof HTMLElement) {
+        messageEl.textContent = unlocked
+          ? `Você concluiu o ${moduleTitle}. Prova liberada.`
+          : "Conclua todos os tópicos deste módulo para desbloquear a prova.";
+      }
+
+      if (contentEl instanceof HTMLElement) {
+        contentEl.hidden = !unlocked;
+      }
+
+      root.dataset.unlocked = unlocked ? "true" : "false";
+    }
+
+    render();
+
+    window.addEventListener("gamification-update", render);
+  }
+
+  function boot() {
+    const roots = Array.from(document.querySelectorAll("[data-module-exam]"));
+    for (const r of roots) {
+        if (r instanceof HTMLElement) init(r);
+    }
+  }
+
+  document.addEventListener("astro:page-load", boot);
+</script>
+
+<style>
+  .module-exam {
+    margin-top: 56px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--bg-surface);
+    overflow: hidden;
+  }
+
+  .module-exam-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: grid;
+    gap: 4px;
+  }
+
+  .module-exam-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .module-exam-subtitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .module-exam-gate {
+    padding: 20px;
+  }
+
+  .gate-card {
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    display: grid;
+    gap: 12px;
+  }
+
+  .gate-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 640px) {
+    .gate-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .kpi-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .kpi-value {
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--text-primary);
+  }
+
+  [data-kpi-status][data-state="unlocked"] {
+    color: var(--accent-blue);
+  }
+
+  .gate-message {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .module-exam-content {
+    padding: 0 20px 20px 20px;
+  }
+</style>

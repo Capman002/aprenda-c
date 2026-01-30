@@ -1,0 +1,227 @@
+---
+interface Props {
+  class?: string;
+  style?: string;
+  color?: string;
+  trailOpacity?: number;
+  particleCount?: number;
+  speed?: number;
+}
+
+const {
+  class: className,
+  style,
+  color = "#6366f1",
+  trailOpacity = 0.15,
+  particleCount = 600,
+  speed = 1,
+} = Astro.props;
+---
+
+<div 
+  class:list={["neural-wrapper", className]}
+  style={style}
+  data-color={color}
+  data-trail-opacity={trailOpacity}
+  data-particle-count={particleCount}
+  data-speed={speed}
+>
+  <canvas></canvas>
+</div>
+
+<script>
+  class NeuralBackground {
+    container: HTMLElement;
+    canvas: HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
+    width: number = 0;
+    height: number = 0;
+    particles: Particle[] = [];
+    animationFrameId: number = 0;
+    mouse = { x: -1000, y: -1000 };
+    
+    // Configs
+    color: string;
+    trailOpacity: number;
+    particleCount: number;
+    speed: number;
+
+    constructor(el: HTMLElement) {
+      this.container = el;
+      const canvasEl = el.querySelector("canvas");
+      if (!canvasEl) throw new Error("Canvas not found");
+      this.canvas = canvasEl;
+      
+      const ctx = this.canvas.getContext("2d");
+      if (!ctx) throw new Error("Could not get context");
+      this.ctx = ctx;
+
+      // Read config
+      this.color = el.dataset.color || "#6366f1";
+      this.trailOpacity = parseFloat(el.dataset.trailOpacity || "0.15");
+      this.particleCount = parseInt(el.dataset.particleCount || "600");
+      this.speed = parseFloat(el.dataset.speed || "1");
+
+      this.init();
+      this.animate();
+      this.bindEvents();
+    }
+
+    init() {
+        this.width = this.container.clientWidth;
+        this.height = this.container.clientHeight;
+
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = this.width * dpr;
+        this.canvas.height = this.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        
+        // Initial Black Background (Fix white flash)
+        this.ctx.fillStyle = "#000000";
+        this.ctx.fillRect(0, 0, this.width, this.height);
+        
+        this.particles = [];
+        for (let i = 0; i < this.particleCount; i++) {
+            this.particles.push(new Particle(this.width, this.height, this.speed));
+        }
+    }
+
+    animate = () => {
+        // Trail effect
+        this.ctx.fillStyle = `rgba(5, 5, 5, ${this.trailOpacity})`; 
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        this.particles.forEach(p => {
+            p.update(this.mouse, this.width, this.height, this.speed);
+            p.draw(this.ctx, this.color);
+        });
+
+        this.animationFrameId = requestAnimationFrame(this.animate);
+    }
+
+    bindEvents() {
+        const resizeObserver = new ResizeObserver(() => this.init());
+        resizeObserver.observe(this.container);
+
+        this.container.addEventListener("mousemove", (e) => {
+            const rect = this.paramsRect();
+            this.mouse.x = e.clientX - rect.left;
+            this.mouse.y = e.clientY - rect.top;
+        });
+
+        this.container.addEventListener("mouseleave", () => {
+            this.mouse.x = -1000;
+            this.mouse.y = -1000;
+        });
+    }
+
+    paramsRect() {
+        return this.canvas.getBoundingClientRect();
+    }
+
+    destroy() {
+        cancelAnimationFrame(this.animationFrameId);
+    }
+  }
+
+  class Particle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    age: number;
+    life: number;
+
+    constructor(w: number, h: number, speed: number) {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.vx = 0;
+        this.vy = 0;
+        this.age = 0;
+        this.life = Math.random() * 200 + 100;
+    }
+
+    update(mouse: {x: number, y: number}, width: number, height: number, speed: number) {
+        // Flow field
+        const angle = (Math.cos(this.x * 0.005) + Math.sin(this.y * 0.005)) * Math.PI;
+        
+        this.vx += Math.cos(angle) * 0.2 * speed;
+        this.vy += Math.sin(angle) * 0.2 * speed;
+
+        // Mouse interaction
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const interactionRadius = 150;
+
+        if (distance < interactionRadius) {
+            const force = (interactionRadius - distance) / interactionRadius;
+            this.vx -= dx * force * 0.05;
+            this.vy -= dy * force * 0.05;
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.95;
+        this.vy *= 0.95;
+
+        this.age++;
+        if (this.age > this.life) {
+            this.reset(width, height);
+        }
+
+        // Wrap
+        if (this.x < 0) this.x = width;
+        if (this.x > width) this.x = 0;
+        if (this.y < 0) this.y = height;
+        if (this.y > height) this.y = 0;
+    }
+
+    reset(w: number, h: number) {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.vx = 0;
+        this.vy = 0;
+        this.age = 0;
+        this.life = Math.random() * 200 + 100;
+    }
+
+    draw(ctx: CanvasRenderingContext2D, color: string) {
+        ctx.fillStyle = color;
+        const alpha = 1 - Math.abs((this.age / this.life) - 0.5) * 2;
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(this.x, this.y, 1.5, 1.5);
+    }
+  }
+
+  // Init logic for Astro View Transitions compatibility
+  function initNeural() {
+    const backgrounds = document.querySelectorAll('.neural-background');
+    backgrounds.forEach(bg => {
+        if (bg instanceof HTMLElement && !bg.dataset.initialized) {
+            new NeuralBackground(bg);
+            bg.dataset.initialized = "true";
+        }
+    });
+  }
+
+  // Support both initial load and view transitions
+  document.addEventListener('astro:page-load', initNeural);
+  document.addEventListener('DOMContentLoaded', initNeural);
+</script>
+
+<style>
+    .neural-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background-color: #050505;
+        overflow: hidden;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+</style>

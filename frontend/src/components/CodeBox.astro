@@ -1,0 +1,178 @@
+---
+interface Props {
+  title?: string;
+  initialCode: string;
+}
+
+const { title, initialCode } = Astro.props;
+---
+
+<section class="codebox" data-codebox>
+  {title && <div class="codebox-title">{title}</div>}
+
+  <div class="codebox-editor">
+    <textarea class="codebox-textarea" data-codebox-input>{initialCode}</textarea>
+  </div>
+
+  <div class="codebox-actions">
+    <button type="button" class="codebox-run" data-codebox-run>Run</button>
+    <div class="codebox-status" data-codebox-status>Pronto</div>
+  </div>
+
+  <div class="codebox-output" data-codebox-output hidden></div>
+</section>
+
+<script>
+  import { CompilerService } from "../modules/playground/CompilerService";
+
+  function init(root) {
+    if (!(root instanceof HTMLElement)) return;
+    if (root.dataset.initialized === "true") return;
+    root.dataset.initialized = "true";
+
+    const input = root.querySelector("[data-codebox-input]");
+    const runBtn = root.querySelector("[data-codebox-run]");
+    const statusEl = root.querySelector("[data-codebox-status]");
+    const outEl = root.querySelector("[data-codebox-output]");
+
+    if (!(input instanceof HTMLTextAreaElement)) return;
+    if (!(runBtn instanceof HTMLButtonElement)) return;
+
+    const compiler = new CompilerService();
+
+    async function run() {
+      if (runBtn.disabled) return;
+
+      runBtn.disabled = true;
+      if (statusEl instanceof HTMLElement) statusEl.textContent = "Compilando...";
+      if (outEl instanceof HTMLElement) {
+        outEl.hidden = true;
+        outEl.textContent = "";
+        outEl.dataset.state = "";
+      }
+
+      const files = new Map();
+      files.set("main.c", input.value);
+
+      const result = await compiler.run(files);
+
+      if (statusEl instanceof HTMLElement) {
+        statusEl.textContent = result.success ? "OK" : "Erro";
+        statusEl.dataset.state = result.success ? "ok" : "error";
+      }
+
+      if (outEl instanceof HTMLElement) {
+        outEl.hidden = false;
+
+        const stderr = result.stderr || result.error || "";
+        const stdout = result.stdout || "";
+
+        if (stderr) {
+          outEl.dataset.state = "error";
+          outEl.textContent = stderr;
+        } else {
+          outEl.dataset.state = "ok";
+          outEl.textContent = stdout || "(sem saída)";
+        }
+      }
+
+      runBtn.disabled = false;
+    }
+
+    runBtn.addEventListener("click", run);
+  }
+
+  function boot() {
+    const roots = Array.from(document.querySelectorAll("[data-codebox]"));
+    for (const r of roots) init(r);
+  }
+
+  document.addEventListener("astro:page-load", boot);
+</script>
+
+<style>
+  .codebox {
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 14px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .codebox-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .codebox-textarea {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.35);
+    color: var(--text-primary);
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .codebox-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .codebox-run {
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid rgba(50,145,255,0.28);
+    background: rgba(50,145,255,0.12);
+    color: var(--text-primary);
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .codebox-run:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .codebox-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .codebox-status[data-state="ok"] {
+    color: var(--accent-blue);
+  }
+
+  .codebox-status[data-state="error"] {
+    color: #f87171;
+  }
+
+  .codebox-output {
+    white-space: pre-wrap;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.35);
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .codebox-output[data-state="error"] {
+    border-color: rgba(248, 81, 73, 0.25);
+    color: #f87171;
+  }
+
+  .codebox-output[data-state="ok"] {
+    border-color: rgba(50,145,255,0.22);
+    color: var(--text-primary);
+  }
+</style>

@@ -2,320 +2,96 @@
 import { ClientRouter } from 'astro:transitions';
 import FloatingMenu from '../components/FloatingMenu.astro';
 import MobileBottomMenu from '../components/MobileBottomMenu.astro';
-import Icon from '../components/Icon.astro';
-import Base from '../layouts/Base.astro';
 import { SITE } from '../site.config';
+
+// Landing Sections
+import Hero from '../components/landing/Hero.astro';
+import Features from '../components/landing/Features.astro';
+import Curriculum from '../components/landing/Curriculum.astro';
+import LiveDemo from '../components/landing/LiveDemo.astro';
+import Footer from '../components/landing/Footer.astro';
 ---
 
 <!doctype html>
 <html lang="pt-BR">
 	<head>
-        <!-- Nota: index.astro não usa Base Layout mas deveria. 
-             Como tem head manual, vou manter mas atualizar os dados -->
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{SITE.title}</title>
 
-        <!-- Fontes Locais -->
+        <!-- Fontes -->
         <style>
           import "@fontsource/inter/400.css";
-          /* import "@fontsource/inter/500.css"; */
           import "@fontsource/inter/600.css";
           import "@fontsource/inter/700.css";
+          /* Para o CodeBox */
+          import "@fontsource/jetbrains-mono/400.css"; 
         </style>
 
 		<ClientRouter />
 	</head>
 	<body>
-        <div class="landing-page">
-            <div class="desktop-menu">
-                <FloatingMenu />
-            </div>
-            <MobileBottomMenu />
-			
-			<main class="hero-container">
-				<div class="hero-content">
-					<h1>Programação de Baixo Nível<br/>& Engenharia de Hardware</h1>
-					<p class="hero-desc">
-						Um mergulho técnico profundo para engenheiros que desejam dominar 
-						desde o silício até os algoritmos de controle.
-					</p>
-                    
-                    <div class="cta-group">
-                        <a href="/course/contexto-historico/historia-programacao" class="btn-primary">
-                            Iniciar Jornada <Icon name="arrow-right" size={16} />
-                        </a>
-                        <a href="/playground" class="btn-secondary">
-                            Playground
-                        </a>
-                    </div>
-				</div>
+        <!-- Menus -->
+        <div class="desktop-menu">
+            <FloatingMenu />
+        </div>
+        <MobileBottomMenu />
 
-                <div class="features-row">
-                    <div class="feature-item">
-                        <h3><Icon name="terminal" size={18} /> Hardcore C</h3>
-                        <p>Ponteiros e Memória.</p>
-                    </div>
-                    <div class="separator">/</div>
-                    <div class="feature-item">
-                        <h3><Icon name="cpu" size={18} /> Bare Metal</h3>
-                        <p>Controle direto.</p>
-                    </div>
-                    <div class="separator">/</div>
-                    <div class="feature-item">
-                        <h3><Icon name="book-open" size={18} /> Algoritmos</h3>
-                        <p>PID e Controle.</p>
-                    </div>
-                </div>
-			</main>
-		</div>
+        <!-- Main Content -->
+		<main>
+            <Hero />
+            <Features />
+            <LiveDemo />
+            <Curriculum />
+            <Footer />
+		</main>
 	</body>
 </html>
 
-<style>
-/* Variáveis */
+<style is:global>
+/* Variáveis de Tema */
 :root {
-    --bg-app: #050505; /* Black Profundo */
+    --bg-app: #050505;
     --text-primary: #e4e4e7;
-    --border: #27272a;
-    --accent: #3b82f6;
+    --text-secondary: #a1a1aa;
+    --accent-blue: #3b82f6;
+    --border-subtle: rgba(255,255,255,0.05);
+}
+
+html {
+    background: var(--bg-app);
+    scroll-behavior: smooth;
 }
 
 body { 
     margin: 0; 
-    background: var(--bg-app); 
+    padding: 0;
     font-family: 'Inter', sans-serif; 
     color: var(--text-primary); 
-    min-height: 100vh; /* Use min-height instead of fixed height */
-    overflow-x: hidden; /* Only hide horizontal overflow */
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
+
 * { box-sizing: border-box; }
 
-.landing-page {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(circle at 50% 0%, #15151a 0%, #050505 60%);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Fundo sutil de grid ou luz */
-.landing-page::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=');
-    mask-image: radial-gradient(circle at 50% 50%, black, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-}
-
-.hero-container {
-    padding: 0 24px;
-    z-index: 10; /* Aumentado para garantir */
-    position: relative; /* Essencial para z-index funcionar */
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 60px;
-    padding-top: 120px; /* Aumentado padding para descolar do menu */
-    width: 100%;
-}
-
-/* Hero Texto */
-h1 {
-    font-size: 4rem;
-    line-height: 1.1;
-    font-weight: 800;
-    margin: 0 0 24px 0;
-    letter-spacing: -0.04em;
-    background: linear-gradient(180deg, #fff 0%, #a1a1aa 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.hero-desc {
-    font-size: 1.25rem;
-    color: #a1a1aa;
-    line-height: 1.6;
-    max-width: 580px;
-    margin: 0 auto 40px auto; /* Centralização explícita */
-}
-
-/* Botões */
-.cta-group { display: flex; gap: 16px; justify-content: center; }
-
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #fff;
-    color: #000;
-    padding: 12px 32px;
-    border-radius: 99px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: transform 0.2s, box-shadow 0.2s;
-    height: 48px; /* Altura explícita para alinhamento */
-}
-.btn-primary:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 0 20px rgba(255,255,255,0.3);
-}
-
-.btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 32px;
-    background: transparent;
-    color: #a1a1aa;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 99px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s;
-    height: 48px; /* Altura explícita para igualar btn-primary */
-}
-.btn-secondary:hover { 
-    background: rgba(255,255,255,0.05); 
-    color: #fff;
-    border-color: rgba(255,255,255,0.2);
-}
-
-/* Features Minimalistas */
-.features-row {
-    display: flex;
-    align-items: center;
-    justify-content: center; /* Garante centralização */
-    gap: 32px; /* Espaço mais generoso */
-    padding: 24px 48px;
-    border-radius: 99px;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    margin-top: 40px;
-}
-
-.feature-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    min-width: 140px; /* Largura mínima para evitar desalinhamento visual */
-}
-
-.feature-item h3 {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: #fff;
-    margin: 0;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.feature-item p {
-    margin: 0;
-    color: #71717a;
-    font-size: 0.85rem;
-    text-align: center;
-}
-
-.separator {
-    color: #27272a;
-    font-weight: 300;
-    font-size: 1.5rem;
-    line-height: 1;
-    margin-top: -4px; /* Ajuste ótico fino para centralizar com o texto */
-    opacity: 0.5;
+/* Menu Handling */
+.desktop-menu {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
 }
 
 @media (max-width: 768px) {
-    .landing-page {
-        display: block; /* Fix flex issue hiding content */
-        height: auto;
-        min-height: 100vh;
-        overflow-y: auto;
-        padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    /* Hide floating menu wrapper (desktop) */
     .desktop-menu {
         display: none !important;
     }
-
-    /* Additional safety for older rules */
-    :global(.floating-menu) {
-        display: none !important;
-    }
-
-    /* Typography & Spacing */
-    h1 {
-        font-size: 2.5rem; /* Better scale */
-        line-height: 1.1;
-        letter-spacing: -0.03em;
-        margin-bottom: 16px;
-    }
     
-    .hero-desc {
-        font-size: 1rem;
-        padding: 0 16px;
-        margin-bottom: 32px;
-    }
-
-    .hero-container {
-        padding-top: 80px; 
-        padding-bottom: 140px; /* Space for bottom menu */
-        gap: 24px;
-        justify-content: flex-start;
-    }
-
-    /* Buttons Stacked */
-    .cta-group {
-        flex-direction: column; /* Stack buttons vertical */
-        width: 100%;
-        max-width: 280px; /* Limit width for aesthetics */
-        gap: 12px;
-    }
-    
-    .btn-primary, .btn-secondary {
-        width: 100%;
-        justify-content: center;
-        height: 52px; /* Taller touch target */
-    }
-
-    /* Feature Cards - Fix Pill Shape */
-    .features-row {
-        flex-direction: column;
-        width: 100%;
-        gap: 32px;
-        margin-top: 24px;
-        border-radius: 24px; /* Relaxed radius, not pill */
-        padding: 32px 24px;
-        background: rgba(255,255,255,0.03);
-    }
-
-    .feature-item {
-        width: 100%;
-        gap: 4px;
-    }
-    
-    .feature-item h3 {
-        font-size: 1rem;
-    }
-
-    .separator {
-        display: none;
+    /* Adjust for mobile bottom menu spacing if needed */
+    main {
+        padding-bottom: 80px;
     }
 }
 </style>

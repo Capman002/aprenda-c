@@ -111,7 +111,7 @@ const jsonLd = {
 			<main class="content-area">
 				<div class="content-grid">
 					<div class="prose-column">
-						<header class="top-bar">
+<header class="top-bar">
 							<div class="breadcrumbs">
 								<span class="crumb-root">Módulos</span>
 								<span class="crumb-separator">/</span>
@@ -127,7 +127,6 @@ const jsonLd = {
 						</header>
 
 						<slot />
-
 						<!-- Mobile Support CTA (UX: Converta leitores engajados) -->
 						<div class="mobile-support-cta">
 							<a href="https://github.com/sponsors/Capman002/" target="_blank" class="support-card-mobile">
@@ -164,34 +163,8 @@ const jsonLd = {
 					<!-- Right Sidebar (Table of Contents & Metadata) -->
 					<aside class="toc-sidebar">
 						<div class="toc-wrapper">
-							<!-- Metadata Section -->
-							<div class="doc-metadata">
-								{frontmatter.difficulty && (
-									<span class={`badge difficulty ${frontmatter.difficulty.toLowerCase()}`}>
-										{frontmatter.difficulty}
-									</span>
-								)}
-								{frontmatter.duration && (
-									<span class="meta-item">
-										<Icon name="clock" size={14} /> {frontmatter.duration}
-									</span>
-								)}
-							</div>
-
-							<h3 class="toc-title">Nesta página</h3>
-							<nav class="toc-nav">
-								<ul>
-									{tocHeadings.map((h: any) => (
-										<li class={`toc-item depth-${h.depth}`}>
-											<a href={`#${h.slug}`}>{h.text}</a>
-										</li>
-									))}
-								</ul>
-							</nav>
-							
 							<!-- Author Profile Sidebar -->
 							<div class="sidebar-author">
-								<h3 class="toc-title">Autor</h3>
 								<div class="sidebar-profile-card">
 									<div class="sidebar-avatar">
 										<img src="/Emanuel-Nunes.webp" alt={SITE.author} />
@@ -218,11 +191,37 @@ const jsonLd = {
 									<span>Apoiar o Autor</span>
 								</a>
 							</div>
+
+							<!-- Metadata Section -->
+							<div class="doc-metadata">
+								{frontmatter.difficulty && (
+									<span class={`badge difficulty ${frontmatter.difficulty.toLowerCase()}`}>
+										{frontmatter.difficulty}
+									</span>
+								)}
+								{frontmatter.duration && (
+									<span class="meta-item">
+										<Icon name="clock" size={14} /> {frontmatter.duration}
+									</span>
+								)}
+							</div>
+
+							<h3 class="toc-title">Nesta página</h3>
+							<nav class="toc-nav">
+								<ul>
+									{tocHeadings.map((h: any) => (
+										<li class={`toc-item depth-${h.depth}`}>
+											<a href={`#${h.slug}`}>{h.text}</a>
+										</li>
+									))}
+								</ul>
+							</nav>
 						</div>
 					</aside>
 				</div>
 			</main>
 		</div>
+		<slot name="overlay" />
 		
 		<script>
 			// Premium Copy Code Feature
@@ -358,6 +357,7 @@ const jsonLd = {
 		height: 100vh;
 		overflow: hidden;
 		isolation: isolate; /* Create new stacking context */
+		transition: filter 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms cubic-bezier(0.16, 1, 0.3, 1), transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.content-area {
@@ -368,7 +368,7 @@ const jsonLd = {
 		overflow-x: hidden; /* Prevent horizontal scroll */
 		scroll-behavior: smooth;
 		background: var(--bg-app);
-		padding-top: 96px; /* Space for fixed navbar */
+		padding-top: 0px; /* Space for fixed navbar */
 		position: relative;
 	}
 
@@ -387,6 +387,64 @@ const jsonLd = {
 		max-width: 1200px;
 		padding: 0 48px 160px 48px;
 		margin: 0 auto;
+	}
+
+	body.focus-mode .sidebar {
+		display: none !important;
+	}
+
+	body.focus-mode .toc-sidebar {
+		display: none !important;
+	}
+
+	body.focus-mode .content-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	body.podcast-mode .floating-menu {
+		display: none !important;
+	}
+
+	body.podcast-mode .mobile-bottom-menu {
+		display: none !important;
+	}
+
+	body.podcast-mode .sidebar {
+		display: none !important;
+	}
+
+	body.podcast-mode .toc-sidebar {
+		display: none !important;
+	}
+
+	body.podcast-mode .content-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	body.podcast-mode .content-area {
+		padding-left: 360px;
+		padding-bottom: 140px;
+	}
+
+	body.podcast-mode .app-shell {
+		filter: saturate(0.9);
+		opacity: 0.78;
+		transform: scale(0.995);
+		transform-origin: center;
+	}
+
+	body.podcast-mode .prose-column {
+		margin-top: 24px;
+	}
+
+	@media (max-width: 960px) {
+		body.podcast-mode .content-area {
+			padding-left: 0;
+			padding-bottom: 170px;
+		}
+	}
+	.prose-column{
+		margin-top: 95px;
 	}
 
 	.top-bar {
@@ -451,13 +509,16 @@ const jsonLd = {
 	/* TOC Sidebar */
 	.toc-sidebar {
 		position: relative;
+		border-left: 1px solid var(--border-subtle);
+		padding-left: 24px;
 	}
 
 	.toc-wrapper {
 		position: sticky;
-		top: 96px; /* Matches content-area padding-top for a solid 'fixed' feel */
-		border-left: 1px solid var(--border-subtle);
-		padding-left: 24px;
+		top: 0;
+		padding-left: 0;
+		padding-top: 0;
+		padding-bottom: 24px;
 	}
 
 	.toc-title {
@@ -854,15 +915,16 @@ const jsonLd = {
 
 	/* Sidebar Author Profile - Redesigned */
 	.sidebar-author {
-		margin-top: 32px;
-		padding-top: 24px;
-		border-top: 1px solid var(--border-subtle);
+		margin-bottom: 32px;
+		padding-bottom: 24px;
+		border-bottom: 1px solid var(--border-subtle);
 	}
 
 	.sidebar-profile-card {
 		display: flex;
 		gap: 12px;
 		align-items: flex-start;
+		padding-top: 30px;
 	}
 
 	.sidebar-avatar img {

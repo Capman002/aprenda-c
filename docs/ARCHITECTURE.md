@@ -20,13 +20,13 @@ O sistema segue uma arquitetura **monorepo** com separação clara entre fronten
 │   :4321         │     │    :3000        │
 └────────┬────────┘     └────────┬────────┘
          │                       │
-         │                       ▼
-         │              ┌─────────────────┐
-         │              │   Piston API    │
-         │              │   (Execução C)  │
-         │              └─────────────────┘
-         │
-         ▼
+          │                       ▼
+          │              ┌─────────────────┐
+          │              │  Native Runner  │
+          │              │ (GCC + Sandbox) │
+          │              └─────────────────┘
+          │
+          ▼
 ┌─────────────────┐
 │  Content Layer  │
 │   (MDX Files)   │
@@ -58,47 +58,56 @@ frontend/src/
 │   ├── course/           # Conteúdo MDX organizado por módulos
 │   └── config.ts         # Schema de collections
 ├── pages/
-│   ├── index.astro       # Homepage
-│   ├── course/[...slug].astro  # Páginas dinâmicas de aulas
-│   └── playground.astro  # IDE interativa
+│   └── ...               # Rotas
 ├── components/
-│   ├── Playground/       # Componentes do editor
-│   └── Course/           # Componentes de navegação
-└── layouts/
-    └── DocLayout.astro   # Layout principal
+│   └── PodcastOverlay.astro # Player interativo (Refatorado)
+├── lib/
+│   ├── gameStore.ts      # Gamificação (Singleton)
+│   └── podcast/          # Lógica de Audio (Controller)
 ```
 
 ### Backend (Elysia)
 
 **Responsabilidades:**
 
-- Proxy seguro para a Piston API
-- Rate limiting e validação de inputs
-- Circuit breaker para resiliência
+- Execução segura de código C (GPC/Spawn)
+- Rate limiting e validação
+- Servir arquivos estáticos (Fallback)
 
 **Endpoints:**
 
-| Método | Rota            | Descrição                  |
-| ------ | --------------- | -------------------------- |
-| POST   | `/api/execute`  | Executa código C           |
-| GET    | `/api/health`   | Health check               |
-| GET    | `/api/runtimes` | Lista runtimes disponíveis |
+| Método | Rota            | Descrição                |
+| ------ | --------------- | ------------------------ |
+| POST   | `/api/execute`  | Compila e executa código |
+| GET    | `/api/health`   | Status do sistema        |
+| GET    | `/api/runtimes` | Lista versões do GCC     |
 
-**Arquitetura do Handler:**
+**Estrutura Modular:**
 
 ```
-Request → Validação → Rate Limit → Circuit Breaker → Piston API → Response
+src/server/
+├── routes/      # Definição de endpoints (system, compiler, course)
+├── middlewares/ # Lógica de serving e segurança
+├── compiler/    # Serviço de execução nativa do GCC
+├── setup.ts     # Configuração de Segurança (CORS, CSP)
+└── index.ts     # Entry point
 ```
 
-### Piston API
+**Fluxo de Execução:**
 
-Serviço externo que fornece execução segura de código em containers isolados.
+```
+Request → Validação Schema → Cria Dir Temp (.jobs) → Grava .c → GCC Compile → ./app Run → Captura Stdout → Cleanup → Response
+```
+
+### Native Runner (GCC)
+
+Execução isolada localmente utilizando processos temporários e GCC instalado no sistema.
 
 **Configuração:**
 
-- Timeout: 10 segundos
-- Memória: 100MB máximo
-- Sem acesso à rede
+- Timeout: 2 a 5 segundos (process level)
+- Isolamento: Diretórios temporários randômicos (`.jobs/UUID`)
+- Cleanup: Remoção automática pós-execução
 
 ## Fluxo de Dados
 
@@ -162,8 +171,9 @@ Serviço externo que fornece execução segura de código em containers isolados
 ### Estratégia Futura
 
 - Horizontal scaling do backend via containers
-- Redis para rate limiting distribuído
-- Self-hosted Piston para reduzir latência
+- Deploy serverless (se migrar para WebAssembly no futuro)
+- Redis para cache de compilações frequentes
+- Isolamento avançado via Docker (sandbox real) se necessário escalar para múltiplos usuários simultâneos concorrendo pro I/O
 
 ---
 

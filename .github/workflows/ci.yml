@@ -1,0 +1,35 @@
+name: CI Integration
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  check:
+    name: Type Check & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Root Dependencies
+        run: bun install
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          bun install
+
+      - name: Check Backend Types
+        run: bun tsc --noEmit
+
+      - name: Build Frontend (Astro Check)
+        run: |
+          cd frontend
+          bun run build

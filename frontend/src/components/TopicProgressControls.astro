@@ -1,0 +1,155 @@
+---
+interface Props {
+  topicSlug: string;
+}
+
+const { topicSlug } = Astro.props;
+---
+
+<section class="topic-progress" data-topic-progress-root data-topic-slug={topicSlug ?? ''}>
+  <div class="topic-progress-header">
+    <div class="topic-progress-title">Progresso do Tópico</div>
+    <div class="topic-progress-status" data-topic-status></div>
+  </div>
+
+  <div class="topic-progress-actions">
+    <button type="button" class="topic-btn" data-topic-toggle>
+      Marcar como concluído
+    </button>
+  </div>
+</section>
+
+<script>
+  import { gameStore } from "../lib/gameStore";
+
+  function init(root: HTMLElement) {
+    try {
+      if (!(root instanceof HTMLElement)) return;
+      if (root.dataset.initialized === "true") return;
+      root.dataset.initialized = "true";
+
+      const topicSlug = root.dataset.topicSlug;
+      if (typeof topicSlug !== "string") return;
+
+      const statusEl = root.querySelector("[data-topic-status]");
+      const toggleBtn = root.querySelector("[data-topic-toggle]");
+
+      function render() {
+        try {
+          const progress = gameStore.getTopic(topicSlug as string);
+          const completed = progress?.completed ?? false;
+
+          if (statusEl instanceof HTMLElement) {
+            statusEl.textContent = completed ? "Concluído" : "Pendente";
+            statusEl.dataset.state = completed ? "done" : "todo";
+          }
+
+          if (toggleBtn instanceof HTMLButtonElement) {
+            toggleBtn.textContent = completed ? "Marcar como pendente" : "Marcar como concluído";
+            toggleBtn.dataset.state = completed ? "done" : "todo";
+          }
+
+          root.dataset.completed = completed ? "true" : "false";
+        } catch (e) {
+            console.error("TopicProgress: Render error", e);
+        }
+      }
+
+      render();
+
+      if (toggleBtn instanceof HTMLButtonElement) {
+        toggleBtn.addEventListener("click", () => {
+          const progress = gameStore.getTopic(topicSlug);
+          const completed = progress?.completed ?? false;
+          gameStore.setTopicCompleted(topicSlug, !completed);
+          render();
+        });
+      }
+
+      window.addEventListener("gamification-update", render);
+    } catch (err) {
+      console.error("TopicProgress: Init error", err);
+    }
+  }
+
+  function boot() {
+    const roots = Array.from(document.querySelectorAll("[data-topic-progress-root]"));
+    for (const r of roots) {
+        if (r instanceof HTMLElement) init(r);
+    }
+  }
+
+  document.addEventListener("astro:page-load", boot);
+</script>
+
+<style>
+  .topic-progress {
+    margin-top: 32px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    background: var(--bg-surface);
+    padding: 16px;
+  }
+
+  .topic-progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .topic-progress-title {
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .topic-progress-status {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .topic-progress-status[data-state="done"] {
+    border-color: rgba(39, 226, 164, 0.25);
+    background: rgba(39, 226, 164, 0.08);
+    color: #27e2a4;
+  }
+
+  .topic-progress-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .topic-btn {
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
+  }
+
+  .topic-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+  }
+
+  .topic-btn[data-state="done"] {
+    border-color: rgba(50, 145, 255, 0.28);
+    background: rgba(50, 145, 255, 0.12);
+    color: #fff;
+  }
+</style>

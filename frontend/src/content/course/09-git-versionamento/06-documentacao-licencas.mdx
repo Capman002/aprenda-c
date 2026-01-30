@@ -7,6 +7,31 @@ tags: ["Documentation", "Licenses", "Open Source", "Legal", "Architecture"]
 order: 6
 slug: "git-versionamento/documentacao-licencas"
 module: "Módulo 09: Git Versionamento"
+quiz:
+  - question: "Se você utilizar uma biblioteca com licença GPLv3 em seu software proprietário e distribuí-lo, o que acontece?"
+    options:
+      - "Nada, pois é Open Source."
+      - "Você deve pagar royalties ao autor original."
+      - "Todo o seu projeto deve se tornar Open Source sob a licença GPL."
+      - "Você apenas precisa citar o autor no README."
+    answer: 2
+    explanation: "A GPL é uma licença 'Copyleft Forte' (Viral). Ela exige que qualquer trabalho derivado ou vinculado estaticamente seja distribuído sob a mesma licença."
+  - question: "Qual licença é recomendada para maximizar a adoção corporativa, permitindo uso em software proprietário sem 'contaminar' o código, mas protegendo contra processos de patentes?"
+    options:
+      - "MIT"
+      - "Apache 2.0"
+      - "AGPL"
+      - "Unlicense"
+    answer: 1
+    explanation: "A Apache 2.0 é permissiva como a MIT, mas adiciona uma cláusula expressa de patentes que protege os usuários contra retaliações jurídicas sobre patentes."
+  - question: "No framework Diátaxis, qual tipo de documentação foca estritamente no 'aprendizado' prático passo-a-passo para iniciantes?"
+    options:
+      - "Reference"
+      - "Explanation"
+      - "How-to Guides"
+      - "Tutorials"
+    answer: 3
+    explanation: "Tutoriais são lições orientadas ao aprendizado, focadas em levar o usuário do ponto A ao B para construir confiança. Diferente de How-to guides, que focam em resolver um problema específico."
 ---
 
 Engenharia de Software não é apenas código; é sobre a gestão do ciclo de vida, proteção da propriedade intelectual e comunicação eficiente. Um código sem licença é juridicamente "todos os direitos reservados" (copyright exclusivo), tornando-o inutilizável por terceiros sem risco legal. Um código sem documentação é dívida técnica imediata.
