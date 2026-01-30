@@ -137,15 +137,37 @@ export class PodcastController {
   // --- Track Management ---
 
   public loadTrackBySlug(slug: string) {
-    if (this.isAdPlaying) return; // Talvez permitir skip ad trocando de track? Mantendo bloqueio conforme original.
+    if (this.isAdPlaying) return;
 
     const idx = this.trackList.findIndex((t) => t.slug === slug);
     if (idx >= 0) {
+      if (this.currentTrackIndex === idx) return; // Já está selecionada
+
       this.currentTrackIndex = idx;
       const track = this.trackList[idx];
 
-      // Decidir se toca Ad ou Conteúdo
-      this.playContentOrAd(track);
+      // Se já estava tocando música, continua tocando a nova
+      if (!this.audio.paused) {
+        this.playContentOrAd(track);
+      } else {
+        // Apenas carrega os metadados visualmente e prepara o áudio, não toca
+        // isAdPlaying stays false
+        // sessionTracksPlayed does NOT increment here by default
+
+        const voice = this.currentVoice;
+        const url = voice === "orus" ? track.audioOrus : track.audioLeda;
+        const finalUrl =
+          url || (voice === "orus" ? track.audioLeda : track.audioOrus);
+
+        if (finalUrl) {
+          this.audio.src = finalUrl;
+          // Load progress but don't play
+          const progress = this.loadProgress(track.slug, voice);
+          if (progress > 0) this.audio.currentTime = progress;
+        }
+
+        this.notifyChange(track);
+      }
     }
   }
 
