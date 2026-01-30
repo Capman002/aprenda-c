@@ -41,11 +41,10 @@ WORKDIR /app
 RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
 # Copiar dependências do backend
+# Copiar dependências do backend E o manifesto do frontend para satisfazer workspaces
 COPY package.json bun.lock ./
-# Remove workspaces from package.json in production image
-RUN grep -v "workspaces" package.json > package.json.tmp && \
-    grep -v "\"frontend\"" package.json.tmp > package.json && \
-    rm package.json.tmp
+COPY frontend/package.json ./frontend/package.json
+
 RUN bun install --production
 
 # Copiar arquivos do backend
