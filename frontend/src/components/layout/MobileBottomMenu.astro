@@ -57,13 +57,22 @@ const isActive = (path: string) => {
         )
     })()}
 
-    <!-- Menu Toggle -->
-    <button id="mobile-menu-toggle" class="menu-item">
-      <div class="icon-wrapper">
-        <Icon name="align-left" size={20} />
-      </div>
-      <span class="label">Módulos</span>
-    </button>
+    <!-- Contextual Action: Modules or GitHub -->
+    {pathname.startsWith('/course/') ? (
+      <button id="mobile-menu-toggle" class="menu-item">
+        <div class="icon-wrapper">
+          <Icon name="align-left" size={20} />
+        </div>
+        <span class="label">Módulos</span>
+      </button>
+    ) : (
+      <a href={SITE.github} target="_blank" class="menu-item" rel="noopener noreferrer">
+        <div class="icon-wrapper">
+          <Icon name="github" size={20} />
+        </div>
+        <span class="label">GitHub</span>
+      </a>
+    )}
   </div>
 </nav>
 

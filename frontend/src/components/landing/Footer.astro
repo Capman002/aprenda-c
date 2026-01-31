@@ -92,6 +92,7 @@ const footerLinks = [
     .socials {
         display: flex;
         gap: 12px;
+        flex-wrap: wrap;
     }
 
     .social-link {
@@ -176,9 +177,28 @@ const footerLinks = [
     }
     
     @media (max-width: 768px) {
+        .site-footer {
+            padding: 48px 20px 24px;
+        }
+
         .footer-content {
             flex-direction: column;
-            gap: 40px;
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+
+        .brand-col {
+            max-width: 100%;
+        }
+
+        .links-col {
+            gap: 32px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .link-group h4 {
+            margin-bottom: 16px;
         }
     }
 </style>

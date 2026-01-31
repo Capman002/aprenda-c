@@ -14,21 +14,23 @@ const ExecuteRequestSchema = t.Object({
 
 export const compilerRoutes = new Elysia({ prefix: "/api" }).post(
   "/execute",
-  async ({ body, set, error }) => {
+  async ({ body, set }) => {
     try {
       const result = await executeCode(body as ExecuteRequest);
       if (!result.success && result.error === "Erro interno") {
-        return error(500, { success: false, error: "Internal Server Error" });
+        set.status = 500;
+        return { success: false, error: "Internal Server Error" };
       }
       return result;
     } catch (err: any) {
       console.error("[COMPILER ERROR]", err);
-      return error(500, {
+      set.status = 500;
+      return {
         success: false,
         error: "Internal Server Error",
         details:
           process.env.NODE_ENV === "development" ? err.message : undefined,
-      });
+      };
     }
   },
   {
