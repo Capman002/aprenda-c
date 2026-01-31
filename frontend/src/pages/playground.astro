@@ -20,6 +20,9 @@ import { SITE } from '../site.config';
 
 				<div class="toolbar">
 					<div class="toolbar-left">
+            <a href="javascript:history.back()" class="back-link-mobile" title="Voltar">
+              <Icon name="arrow-right" size={18} style="transform: rotate(180deg);" />
+            </a>
 						<div class="project-name">
 							<Icon name="folder" size={14} />
 							<span>Projeto C</span>
@@ -27,7 +30,17 @@ import { SITE } from '../site.config';
 					</div>
 					
 					<div class="toolbar-center">
-            <!-- Botão movido para o editor header -->
+            <div class="mobile-view-selector">
+              <button class="view-btn active" data-view="editor" title="Editor">
+                <Icon name="code" size={14} />
+              </button>
+              <button class="view-btn" data-view="explorer" title="Arquivos">
+                <Icon name="folder" size={14} />
+              </button>
+              <button class="view-btn" data-view="output" title="Saída">
+                <Icon name="terminal" size={14} />
+              </button>
+            </div>
 					</div>
 					
 					<div class="toolbar-right">
@@ -181,6 +194,34 @@ import { SITE } from '../site.config';
       controller = new PlaygroundController();
       controller.init();
       (window as any)._playgroundController = controller;
+
+      setupMobileViews();
+  }
+
+  function setupMobileViews() {
+    const selector = document.querySelector('.mobile-view-selector');
+    const ideMain = document.querySelector('.ide-main');
+    if (!selector || !ideMain) return;
+
+    const buttons = selector.querySelectorAll('.view-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const view = (btn as HTMLElement).dataset.view;
+        
+        // Update buttons
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update ide-main classes
+        ideMain.classList.remove('mobile-view-editor', 'mobile-view-explorer', 'mobile-view-output');
+        ideMain.classList.add(`mobile-view-${view}`);
+
+        // Trigger resize for Monaco
+        if (view === 'editor' && (window as any)._playgroundController) {
+          setTimeout(() => (window as any)._playgroundController.editor?.layout(), 100);
+        }
+      });
+    });
   }
 
   // Initial Load
@@ -297,9 +338,11 @@ import { SITE } from '../site.config';
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 16px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  z-index: 100;
 }
 
 .toolbar-right {
@@ -550,5 +593,90 @@ input:checked + .slider:before { transform: translateX(14px); background-color: 
   .ide-footer {
     display: none; /* Hide footer to save space, relies on MobileBottomMenu */
   }
+
+  .back-link-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+    color: var(--text-secondary);
+    background: var(--bg-subtle);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  
+  .back-link-mobile:active {
+    background: var(--bg-panel);
+    transform: scale(0.9);
+  }
+
+  /* Mobile View Switching */
+  .mobile-view-selector {
+    display: flex;
+    background: var(--bg-subtle);
+    padding: 2px;
+    border-radius: 8px;
+    gap: 2px;
+  }
+
+  .view-btn {
+    width: 36px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .view-btn.active {
+    background: var(--bg-panel);
+    color: var(--accent);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  /* IDE Main states on mobile - enforce exclusivity */
+  .ide-main.mobile-view-editor .editor-area { display: flex !important; flex: 1; }
+  .ide-main.mobile-view-editor :global(.file-explorer), 
+  .ide-main.mobile-view-editor :global(.output-panel) { display: none !important; }
+  
+  .ide-main.mobile-view-explorer :global(.file-explorer) { display: flex !important; flex: 1; width: 100% !important; }
+  .ide-main.mobile-view-explorer .editor-area,
+  .ide-main.mobile-view-explorer :global(.output-panel) { display: none !important; }
+
+  .ide-main.mobile-view-output :global(.output-panel) { display: flex !important; flex: 1; height: 100% !important; width: 100% !important; }
+  .ide-main.mobile-view-output .editor-area,
+  .ide-main.mobile-view-output :global(.file-explorer) { display: none !important; }
+
+  /* Default mobile state (Editor only) */
+  .ide-main:not(.mobile-view-explorer):not(.mobile-view-output) :global(.output-panel),
+  .ide-main:not(.mobile-view-explorer):not(.mobile-view-output) :global(.file-explorer) {
+     display: none !important;
+  }
+  
+  .ide-main:not(.mobile-view-explorer):not(.mobile-view-output) .editor-area {
+     display: flex !important;
+     flex: 1 !important;
+     width: 100% !important;
+  }
+
+  .editor-actions-top #expand-btn {
+    display: none !important; /* redundant on mobile */
+  }
+
+  .toolbar-right #toggle-fullscreen {
+     display: none !important; /* usually doesn't work well on mobile browsers anyway */
+  }
 }
+
+/* Base states (Desktop defaults) */
+.mobile-view-selector { display: none; } 
+.back-link-mobile { display: none; }
 </style>

@@ -19,21 +19,43 @@ const isActive = (path: string) => {
       <span class="label">Início</span>
     </a>
 
-    {NAVIGATION.map(item => {
-        let icon: any = "info"; // Default fallback
-        if (item.label === "Curso") icon = "book-open"; 
-        if (item.label === "Playground") icon = "terminal";
-        if (item.label === "GitHub") return null; 
-
+    <!-- Dynamic Navigation Items with Podcast between them -->
+    {(() => {
+        const courseLink = NAVIGATION.find(i => i.label === "Curso");
+        const playgroundLink = NAVIGATION.find(i => i.label === "Playground");
+        
         return (
-            <a href={item.href} class={`menu-item ${isActive(item.href) ? 'active' : ''}`} data-astro-prefetch>
-                <div class="icon-wrapper">
-                    <Icon name={icon} size={20} />
-                </div>
-                <span class="label">{item.label}</span>
-            </a>
+            <>
+                {courseLink && (
+                    <a href={courseLink.href} class={`menu-item ${isActive(courseLink.href) ? 'active' : ''}`} data-astro-prefetch>
+                        <div class="icon-wrapper">
+                            <Icon name="book-open" size={20} />
+                        </div>
+                        <span class="label">Curso</span>
+                    </a>
+                )}
+
+                {/* Podcast Toggle (Visible only in course pages) */}
+                {pathname.startsWith('/course/') && (
+                    <button id="mobile-podcast-toggle" class="menu-item">
+                        <div class="icon-wrapper">
+                            <Icon name="play" size={20} />
+                        </div>
+                        <span class="label">Podcast</span>
+                    </button>
+                )}
+
+                {playgroundLink && (
+                    <a href={playgroundLink.href} class={`menu-item ${isActive(playgroundLink.href) ? 'active' : ''}`} data-astro-prefetch>
+                        <div class="icon-wrapper">
+                            <Icon name="terminal" size={20} />
+                        </div>
+                        <span class="label">Playground</span>
+                    </a>
+                )}
+            </>
         )
-    })}
+    })()}
 
     <!-- Menu Toggle -->
     <button id="mobile-menu-toggle" class="menu-item">
@@ -46,7 +68,33 @@ const isActive = (path: string) => {
 </nav>
 
 <script>
+  function syncButtons() {
+    const podcastBtn = document.getElementById('mobile-podcast-toggle');
+    if (podcastBtn) {
+      const isActive = document.body.classList.contains('podcast-mode');
+      podcastBtn.classList.toggle('active', isActive);
+    }
+  }
+
+  function setupPodcastToggle() {
+    const podcastBtn = document.getElementById('mobile-podcast-toggle');
+    if (podcastBtn) {
+      podcastBtn.addEventListener('click', () => {
+        // Toggle podcast mode in body
+        const isEnabled = document.body.classList.contains('podcast-mode');
+        const next = !isEnabled;
+        
+        document.body.classList.toggle('podcast-mode', next);
+        localStorage.setItem('podcast-mode', next ? '1' : '0');
+        window.dispatchEvent(new CustomEvent('podcast-mode-change', { detail: { enabled: next } }));
+        syncButtons();
+      });
+    }
+  }
+
   function setupMobileMenu() {
+    setupPodcastToggle();
+    syncButtons();
     const toggleBtn = document.getElementById('mobile-menu-toggle');
     const sidebar = document.querySelector('.sidebar');
     
@@ -76,6 +124,9 @@ const isActive = (path: string) => {
         });
       });
     }
+
+    // Listen for external changes (like from PodcastOverlay close btn)
+    window.addEventListener('podcast-mode-change', syncButtons);
   }
 
   document.addEventListener('astro:page-load', setupMobileMenu);

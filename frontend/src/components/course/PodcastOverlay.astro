@@ -162,6 +162,10 @@ const playlistSections = playlist.reduce(
       </div>
 
       <div class="controls-extras">
+        <button type="button" class="btn-transport sm mobile-only" data-playlist-toggle aria-label="Playlist">
+          <Icon name="align-left" size={20} />
+        </button>
+
         <div class="voice-selector" role="tablist" aria-label="Voz">
           <button type="button" class="voice-chip" data-voice="orus">Orus</button>
           <button type="button" class="voice-chip" data-voice="leda">Leda</button>
@@ -407,11 +411,23 @@ const playlistSections = playlist.reduce(
          });
     });
     
+    // Playlist Toggle (Mobile)
+    const playlistToggle = overlay.querySelector('[data-playlist-toggle]');
+    const sidebar = overlay.querySelector('.podcast-sidebar');
+    if (playlistToggle && sidebar) {
+      playlistToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('is-open');
+        overlay.classList.toggle('playlist-open');
+      });
+    }
+
     // Close / Esc
     const closeTargets = overlay.querySelectorAll('[data-podcast-close]');
     closeTargets.forEach(t => t.addEventListener('click', () => {
         controller.pause();
         setPodcastMode(false);
+        sidebar?.classList.remove('is-open');
+        overlay.classList.remove('playlist-open');
     }));
 
     // Initial Render
@@ -1009,6 +1025,8 @@ const playlistSections = playlist.reduce(
     to { opacity: 1; }
   }
 
+  .mobile-only { display: none; }
+
   @media (max-width: 1200px) {
     .podcast-controls {
       grid-template-columns: minmax(0, 1fr) minmax(auto, 400px) minmax(0, 1fr);
@@ -1019,27 +1037,67 @@ const playlistSections = playlist.reduce(
   }
 
   @media (max-width: 900px) {
+    .mobile-only { display: flex; }
+
     .podcast-shell {
       grid-template-columns: 1fr;
-      grid-template-rows: 1fr 140px;
+      grid-template-rows: 1fr 160px;
+    }
+
+    .podcast-sidebar {
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      width: 100%;
+      height: calc(100% - 160px);
+      padding-bottom: 40px;
+    }
+
+    .podcast-sidebar.is-open {
+      transform: translateX(0);
     }
 
     .podcast-controls {
       grid-column: 1;
       grid-row: 2;
       grid-template-columns: 1fr;
-      padding: 16px;
-      gap: 16px;
+      padding: 12px 16px;
+      gap: 12px;
       height: auto;
     }
 
     .controls-track-info {
-      display: none; /* Hide metadata on mobile to save space or move it */
+      display: flex; /* Show small meta on mobile */
+      gap: 12px;
     }
+    
+    .cover-art {
+        width: 40px;
+        height: 40px;
+    }
+
+    .track-main { font-size: 13px; }
+    .track-sub { font-size: 10px; }
 
     .controls-extras {
       width: 100%;
       justify-content: space-between;
+      gap: 12px;
+    }
+
+    .volume-slider {
+        display: none; /* Hide volume on mobile to save space, redundant with system vol */
+    }
+
+    .transport {
+        gap: 32px;
+    }
+    
+    .btn-play {
+        width: 52px;
+        height: 52px;
     }
   }
 </style>
