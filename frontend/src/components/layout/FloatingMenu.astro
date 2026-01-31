@@ -6,13 +6,13 @@ const pathname = Astro.url.pathname;
 const isActive = (path: string) => {
   if (path === '/') return pathname === '/';
   // Fix: Match general section for course content even if href is a deep link
-  if (path.startsWith('/course/') && pathname.startsWith('/course/')) return true;
   if (path.length > 1 && pathname.startsWith(path)) return true;
   return false;
 };
 
-const showFocusToggle = pathname.startsWith('/course/');
-const showPodcastToggle = pathname.startsWith('/course/');
+const isCoursePage = pathname !== '/' && pathname !== '/playground';
+const showFocusToggle = isCoursePage;
+const showPodcastToggle = isCoursePage;
 ---
 
 <nav class="floating-menu">

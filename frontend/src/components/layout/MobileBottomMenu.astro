@@ -8,6 +8,8 @@ const isActive = (path: string) => {
   if (path.length > 1 && pathname.startsWith(path)) return true;
   return false;
 };
+
+const isCoursePage = pathname !== '/' && pathname !== '/playground';
 ---
 
 <nav class="mobile-bottom-menu">
@@ -36,7 +38,7 @@ const isActive = (path: string) => {
                 )}
 
                 {/* Podcast Toggle (Visible only in course pages) */}
-                {pathname.startsWith('/course/') && (
+                {isCoursePage && (
                     <button id="mobile-podcast-toggle" class="menu-item">
                         <div class="icon-wrapper">
                             <Icon name="play" size={20} />
@@ -58,7 +60,7 @@ const isActive = (path: string) => {
     })()}
 
     <!-- Contextual Action: Modules or GitHub -->
-    {pathname.startsWith('/course/') ? (
+    {isCoursePage ? (
       <button id="mobile-menu-toggle" class="menu-item">
         <div class="icon-wrapper">
           <Icon name="align-left" size={20} />

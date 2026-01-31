@@ -82,7 +82,7 @@ function formatTitle(folder: string) {
               const isActive = currentSlug === doc.slug;
               return (
                 <a 
-                  href={`/course/${doc.slug}`} 
+                  href={`/${doc.slug}`} 
                   class:list={['link-item', { active: isActive }]}
                   data-astro-prefetch
                   data-topic-slug={doc.slug}

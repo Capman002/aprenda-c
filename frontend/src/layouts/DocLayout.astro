@@ -144,14 +144,14 @@ const jsonLd = {
 						<!-- Navigation Footer -->
 						<footer class="doc-footer">
 							{prev ? (
-								<a href={`/course/${prev.slug}`} class="nav-card prev">
+								<a href={`/${prev.slug}`} class="nav-card prev">
 									<div class="nav-label"><Icon name="chevron-down" class="rotate-90" size={12} /> Anterior</div>
 									<div class="nav-title">{prev.data.title}</div>
 								</a>
 							) : <div />}
 
 							{next ? (
-								<a href={`/course/${next.slug}`} class="nav-card next">
+								<a href={`/${next.slug}`} class="nav-card next">
 									<div class="nav-label">Próximo <Icon name="chevron-right" size={12} /></div>
 									<div class="nav-title">{next.data.title}</div>
 								</a>

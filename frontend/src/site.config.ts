@@ -20,7 +20,7 @@ export const SITE = {
 export const NAVIGATION = [
   {
     label: "Curso",
-    href: "/course/contexto-historico/historia-programacao",
+    href: "/historia-programacao",
   },
   { label: "Playground", href: "/playground" },
   { label: "GitHub", href: "https://github.com/Capman002/aprenda-c" },

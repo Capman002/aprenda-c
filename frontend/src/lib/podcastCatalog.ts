@@ -13,9 +13,13 @@ function normalizeSegment(segment: string): string {
   return segment.replace(/^\d+-/, "");
 }
 
-function parseAudioPath(path: string): { voice: PodcastVoice; topicSlug: string } | null {
+function parseAudioPath(
+  path: string,
+): { voice: PodcastVoice; topicSlug: string } | null {
   const normalized = path.replace(/\\/g, "/");
-  const match = normalized.match(/\/podcast\/(orus|leda)\/([^/]+)\/([^/]+)\.ogg$/);
+  const match = normalized.match(
+    /\/podcast\/(orus|leda)\/([^/]+)\/([^/]+)\.ogg$/,
+  );
   if (!match) return null;
 
   const voice = match[1] as PodcastVoice;
@@ -24,7 +28,7 @@ function parseAudioPath(path: string): { voice: PodcastVoice; topicSlug: string 
 
   return {
     voice,
-    topicSlug: `${moduleFolder}/${fileSlug}`,
+    topicSlug: fileSlug,
   };
 }
 
