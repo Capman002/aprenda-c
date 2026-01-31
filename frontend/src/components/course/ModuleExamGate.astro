@@ -1,6 +1,6 @@
 ---
 import QuizBlock from "./QuizBlock.astro";
-import type { QuizDefinition } from "../lib/quizBank";
+import type { QuizDefinition } from "../../lib/quizBank";
 
 interface Props {
   moduleId: string;
@@ -48,7 +48,7 @@ const { moduleId, moduleTitle, topicSlugs, exam } = Astro.props;
 </section>
 
 <script>
-  import { gameStore } from "../lib/gameStore";
+  import { gameStore } from "../../lib/gameStore";
 
   function init(root: HTMLElement) {
     if (!(root instanceof HTMLElement)) return;

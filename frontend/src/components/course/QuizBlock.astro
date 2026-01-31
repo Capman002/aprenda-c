@@ -1,6 +1,6 @@
 ---
-import CodeBox from "./CodeBox.astro";
-import type { QuizDefinition, QuizQuestion } from "../lib/quizBank";
+import CodeBox from "../ui/CodeBox.astro";
+import type { QuizDefinition, QuizQuestion } from "../../lib/quizBank";
 
 interface Props {
   quiz: QuizDefinition;
@@ -125,7 +125,7 @@ const { quiz, mode, topicSlug, moduleId } = Astro.props;
 </section>
 
 <script>
-  import { gameStore } from "../lib/gameStore";
+  import { gameStore } from "../../lib/gameStore";
 
   function normalizeNumber(value: any) {
     if (typeof value !== "string") return undefined;

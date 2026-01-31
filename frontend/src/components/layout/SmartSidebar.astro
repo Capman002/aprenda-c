@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import Icon from './Icon.astro';
+import Icon from '../ui/Icon.astro';
 
 // Obtém todo o conteúdo
 const allDocs = await getCollection('course');
@@ -99,7 +99,7 @@ function formatTitle(folder: string) {
 </aside>
 
 <script>
-  import { gameStore } from '../lib/gameStore';
+  import { gameStore } from '../../lib/gameStore';
 
   // Persist Sidebar Scroll Position
   const sidebarNav = document.getElementById('sidebar-nav');

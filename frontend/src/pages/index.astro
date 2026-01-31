@@ -1,14 +1,18 @@
 ---
 import { ClientRouter } from 'astro:transitions';
-import FloatingMenu from '../components/FloatingMenu.astro';
-import MobileBottomMenu from '../components/MobileBottomMenu.astro';
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/jetbrains-mono/400.css"; 
+
+import FloatingMenu from '../components/layout/FloatingMenu.astro';
+import MobileBottomMenu from '../components/layout/MobileBottomMenu.astro';
 import { SITE } from '../site.config';
 
 // Landing Sections
 import Hero from '../components/landing/Hero.astro';
 import Features from '../components/landing/Features.astro';
 import Curriculum from '../components/landing/Curriculum.astro';
-import LiveDemo from '../components/landing/LiveDemo.astro';
 import Footer from '../components/landing/Footer.astro';
 ---
 
@@ -20,16 +24,54 @@ import Footer from '../components/landing/Footer.astro';
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{SITE.title}</title>
 
-        <!-- Fontes -->
-        <style>
-          import "@fontsource/inter/400.css";
-          import "@fontsource/inter/600.css";
-          import "@fontsource/inter/700.css";
-          /* Para o CodeBox */
-          import "@fontsource/jetbrains-mono/400.css"; 
-        </style>
-
 		<ClientRouter />
+
+		<style is:global>
+		/* Variáveis de Tema */
+		:root {
+			--bg-app: #050505;
+			--text-primary: #e4e4e7;
+			--text-secondary: #a1a1aa;
+			--accent-blue: #3b82f6;
+			--border-subtle: rgba(255,255,255,0.05);
+		}
+
+		html {
+			background: var(--bg-app);
+			scroll-behavior: smooth;
+		}
+
+		body { 
+			margin: 0; 
+			padding: 0;
+			font-family: 'Inter', sans-serif; 
+			color: var(--text-primary); 
+			overflow-x: hidden;
+			-webkit-font-smoothing: antialiased;
+		}
+
+		* { box-sizing: border-box; }
+
+		/* Menu Handling */
+		.desktop-menu {
+			position: fixed;
+			top: 24px;
+			left: 50%;
+			transform: translateX(-50%);
+			z-index: 100;
+		}
+
+		@media (max-width: 768px) {
+			.desktop-menu {
+				display: none !important;
+			}
+			
+			/* Adjust for mobile bottom menu spacing if needed */
+			main {
+				padding-bottom: 80px;
+			}
+		}
+		</style>
 	</head>
 	<body>
         <!-- Menus -->
@@ -42,56 +84,8 @@ import Footer from '../components/landing/Footer.astro';
 		<main>
             <Hero />
             <Features />
-            <LiveDemo />
             <Curriculum />
             <Footer />
 		</main>
 	</body>
 </html>
-
-<style is:global>
-/* Variáveis de Tema */
-:root {
-    --bg-app: #050505;
-    --text-primary: #e4e4e7;
-    --text-secondary: #a1a1aa;
-    --accent-blue: #3b82f6;
-    --border-subtle: rgba(255,255,255,0.05);
-}
-
-html {
-    background: var(--bg-app);
-    scroll-behavior: smooth;
-}
-
-body { 
-    margin: 0; 
-    padding: 0;
-    font-family: 'Inter', sans-serif; 
-    color: var(--text-primary); 
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-}
-
-* { box-sizing: border-box; }
-
-/* Menu Handling */
-.desktop-menu {
-    position: fixed;
-    top: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-}
-
-@media (max-width: 768px) {
-    .desktop-menu {
-        display: none !important;
-    }
-    
-    /* Adjust for mobile bottom menu spacing if needed */
-    main {
-        padding-bottom: 80px;
-    }
-}
-</style>

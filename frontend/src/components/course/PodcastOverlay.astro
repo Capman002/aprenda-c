@@ -1,8 +1,8 @@
 ---
 import { navigate } from 'astro:transitions/client';
-import Icon from './Icon.astro';
-import adAudioUrl1 from '../content/podcast/anuncios/anuncio-01-aprendac.mp3';
-import adAudioUrl2 from '../content/podcast/anuncios/anuncio-02-aprendac.mp3';
+import Icon from '../ui/Icon.astro';
+import adAudioUrl1 from '../../content/podcast/anuncios/anuncio-01-aprendac.mp3';
+import adAudioUrl2 from '../../content/podcast/anuncios/anuncio-02-aprendac.mp3';
 
 interface Props {
   topicSlug: string;
@@ -179,9 +179,9 @@ const playlistSections = playlist.reduce(
 </div>
 
 <script>
-  import { gameStore } from '../lib/gameStore';
+  import { gameStore } from '../../lib/gameStore';
   import { navigate } from 'astro:transitions/client';
-  import { PodcastController, type Track } from '../lib/podcast/PodcastController';
+  import { PodcastController, type Track } from '../../lib/podcast/PodcastController';
 
   declare global {
     interface Window {

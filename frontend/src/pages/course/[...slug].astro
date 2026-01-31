@@ -1,9 +1,9 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
 import DocLayout from '@layouts/DocLayout.astro';
-import TopicProgressControls from '../../components/TopicProgressControls.astro';
-import ModuleExamGate from '../../components/ModuleExamGate.astro';
-import PodcastOverlay from '../../components/PodcastOverlay.astro';
+import TopicProgressControls from '../../components/course/TopicProgressControls.astro';
+import ModuleExamGate from '../../components/course/ModuleExamGate.astro';
+import PodcastOverlay from '../../components/course/PodcastOverlay.astro';
 import { getModuleExamId, getModuleId, quizzes } from '../../lib/quizBank';
 import { getPodcastAudioUrl } from '../../lib/podcastCatalog';
 
@@ -46,7 +46,7 @@ interface Props {
   next?: CollectionEntry<'course'>;
 }
 
-import Callout from '../../components/Callout.astro';
+import Callout from '../../components/ui/Callout.astro';
 
 const { entry, prev, next } = Astro.props;
 const { Content, headings } = await entry.render();

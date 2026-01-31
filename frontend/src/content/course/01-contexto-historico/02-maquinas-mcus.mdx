@@ -9,7 +9,7 @@ slug: "contexto-historico/maquinas-mcus"
 module: "Módulo 01: Contexto Historico"
 ---
 
-import YouTube from "../../../components/YouTube.astro";
+import YouTube from "../../../components/ui/YouTube.astro";
 
 Quando as pessoas imaginam "computador", geralmente pensam em laptops ou desktops. Mas a maioria dos computadores no mundo não tem tela nem teclado. Eles estão dentro de carros, eletrodomésticos, brinquedos, termostatos e praticamente qualquer dispositivo eletrônico.
 
@@ -33,13 +33,13 @@ O 8080 (1974) e seus sucessores levaram aos primeiros computadores pessoais aces
 
 Aqui entra uma distinção importante que muita gente confunde:
 
-| Característica | Microprocessador (MPU) | Microcontrolador (MCU) |
-|---------------|------------------------|------------------------|
-| **O que é** | Apenas a CPU | CPU + memória + periféricos, tudo em um chip |
-| **Precisa de** | RAM externa, ROM externa, chips de I/O | Nada. Funciona sozinho |
-| **Custo típico** | $50 - $500 | $0.50 - $10 |
-| **Consumo** | Watts | Miliwatts ou microwatts |
-| **Uso típico** | Computadores gerais | Tarefas dedicadas e embarcadas |
+| Característica   | Microprocessador (MPU)                 | Microcontrolador (MCU)                       |
+| ---------------- | -------------------------------------- | -------------------------------------------- |
+| **O que é**      | Apenas a CPU                           | CPU + memória + periféricos, tudo em um chip |
+| **Precisa de**   | RAM externa, ROM externa, chips de I/O | Nada. Funciona sozinho                       |
+| **Custo típico** | $50 - $500                             | $0.50 - $10                                  |
+| **Consumo**      | Watts                                  | Miliwatts ou microwatts                      |
+| **Uso típico**   | Computadores gerais                    | Tarefas dedicadas e embarcadas               |
 
 Um **microcontrolador** é um computador completo em um único chip. Ele tem processador, memória RAM, memória Flash (para o programa), timers, conversores analógico-digital (ADC), pinos de entrada/saída (GPIO) — tudo integrado.
 
@@ -50,6 +50,7 @@ O Intel 8051 (1980) foi um dos primeiros MCUs populares e sua arquitetura ainda 
 ### Arduino (ATmega328)
 
 O Arduino não é um chip — é uma plataforma. O Arduino Uno, o mais comum, usa o **ATmega328**:
+
 - 8 bits, 16 MHz
 - 32 KB de Flash, 2 KB de RAM
 - 14 pinos digitais, 6 analógicos
@@ -59,6 +60,7 @@ O Arduino popularizou microcontroladores para iniciantes porque abstraiu a compl
 ### ESP32 (Espressif)
 
 A Espressif, empresa chinesa, mudou o jogo da IoT com chips ridiculamente baratos e capazes:
+
 - 32 bits, dual-core, até 240 MHz
 - Wi-Fi e Bluetooth integrados
 - 520 KB de RAM, 4-16 MB de Flash
@@ -69,6 +71,7 @@ O ESP32 é o chip que você encontra em lâmpadas inteligentes, tomadas smart e 
 ### STM32 (STMicroelectronics)
 
 Para aplicações profissionais, a família STM32 é referência:
+
 - ARM Cortex-M (de M0 até M7)
 - De 8 MHz básico até 480 MHz (STM32H7)
 - Periféricos avançados: CAN bus, Ethernet, USB OTG
@@ -92,6 +95,7 @@ C é a linguagem dominante nesse mundo justamente porque dá controle direto sob
 ---
 
 **Referências:**
-- Intel Corporation. *4004 Single Chip 4-Bit P-Channel Microprocessor* (1971)
-- Espressif Systems. *ESP32 Technical Reference Manual* (2016)
-- STMicroelectronics. *STM32 32-bit Arm Cortex MCUs*
+
+- Intel Corporation. _4004 Single Chip 4-Bit P-Channel Microprocessor_ (1971)
+- Espressif Systems. _ESP32 Technical Reference Manual_ (2016)
+- STMicroelectronics. _STM32 32-bit Arm Cortex MCUs_
