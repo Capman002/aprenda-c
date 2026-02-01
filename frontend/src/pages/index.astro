@@ -22,7 +22,26 @@ import Footer from '../components/landing/Footer.astro';
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/x-icon" href="/aprenda-c.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		
+		<!-- SEO Primário -->
 		<title>{SITE.title}</title>
+		<meta name="title" content={SITE.title} />
+		<meta name="description" content={SITE.description} />
+		<link rel="canonical" href={SITE.url} />
+
+		<!-- Open Graph / Facebook -->
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={SITE.url} />
+		<meta property="og:title" content={SITE.title} />
+		<meta property="og:description" content={SITE.description} />
+		<meta property="og:image" content={new URL(SITE.defaultImage, SITE.url)} />
+
+		<!-- Twitter -->
+		<meta property="twitter:card" content="summary_large_image" />
+		<meta property="twitter:url" content={SITE.url} />
+		<meta property="twitter:title" content={SITE.title} />
+		<meta property="twitter:description" content={SITE.description} />
+		<meta property="twitter:image" content={new URL(SITE.defaultImage, SITE.url)} />
 
 		<ClientRouter />
 
