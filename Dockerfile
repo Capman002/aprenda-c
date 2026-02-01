@@ -22,6 +22,7 @@ RUN apt-get update && \
     gcc \
     build-essential \
     curl \
+    unzip \
     ca-certificates \
     supervisor \
     && rm -rf /var/lib/apt/lists/*

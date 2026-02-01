@@ -5,14 +5,14 @@
     # Compressão automática (gzip, zstd, brotli)
     encode zstd gzip
 
-    # Headers de segurança
+    # Headers de segurança (aplicados a todas as respostas)
     header {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "SAMEORIGIN"
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
-        # CSP permitindo YouTube
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; media-src 'self' https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; worker-src 'self' blob:"
+        # CSP permitindo YouTube, data: scripts (Astro View Transitions)
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; media-src 'self' https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; worker-src 'self' blob:"
     }
 
     # API routes -> proxy para Elysia (localhost:3001)
@@ -20,19 +20,25 @@
         reverse_proxy localhost:3001
     }
 
-    # Assets imutáveis (cache agressivo de 1 ano)
-    @immutable path /_astro/* /fonts/*
-    handle @immutable {
-        header Cache-Control "public, max-age=31536000, immutable"
-        root * /app/frontend/dist
-        file_server
-    }
-
-    # Arquivos estáticos (cache de 1 hora com revalidação)
+    # Arquivos estáticos do frontend
     handle {
-        header Cache-Control "public, max-age=3600, stale-while-revalidate=86400"
         root * /app/frontend/dist
+        
+        # Cache para assets imutáveis (hashes no nome)
+        @immutable path /_astro/*
+        header @immutable Cache-Control "public, max-age=31536000, immutable"
+        
+        # Cache para outros estáticos
+        @static path /fonts/* /*.ico /*.webp /*.png /*.jpg /*.svg
+        header @static Cache-Control "public, max-age=604800"
+        
+        # HTML com cache curto + revalidação
+        @html path_regexp html \.(html?)$|^/[^.]*$
+        header @html Cache-Control "public, max-age=60, stale-while-revalidate=3600"
+        
+        # SPA fallback: tenta arquivo, depois /path/index.html, depois index.html
         try_files {path} {path}/index.html {path}.html /404.html
+        
         file_server
     }
 
