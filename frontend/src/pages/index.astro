@@ -27,21 +27,69 @@ import Footer from '../components/landing/Footer.astro';
 		<title>{SITE.title}</title>
 		<meta name="title" content={SITE.title} />
 		<meta name="description" content={SITE.description} />
-		<link rel="canonical" href={SITE.url} />
+		<link rel="canonical" href={`${SITE.url}/`} />
 
 		<!-- Open Graph / Facebook -->
 		<meta property="og:type" content="website" />
-		<meta property="og:url" content={SITE.url} />
+		<meta property="og:url" content={`${SITE.url}/`} />
 		<meta property="og:title" content={SITE.title} />
 		<meta property="og:description" content={SITE.description} />
-		<meta property="og:image" content={new URL(SITE.defaultImage, SITE.url)} />
+		<meta property="og:image" content={new URL(SITE.defaultImage, SITE.url).href} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:site_name" content={SITE.name} />
 
 		<!-- Twitter -->
-		<meta property="twitter:card" content="summary_large_image" />
-		<meta property="twitter:url" content={SITE.url} />
-		<meta property="twitter:title" content={SITE.title} />
-		<meta property="twitter:description" content={SITE.description} />
-		<meta property="twitter:image" content={new URL(SITE.defaultImage, SITE.url)} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content={`${SITE.url}/`} />
+		<meta name="twitter:title" content={SITE.title} />
+		<meta name="twitter:description" content={SITE.description} />
+		<meta name="twitter:image" content={new URL(SITE.defaultImage, SITE.url).href} />
+
+		<!-- Locale -->
+		<meta property="og:locale" content="pt_BR" />
+
+		<!-- Sitemap -->
+		<link rel="sitemap" href="/sitemap-index.xml" />
+
+		<!-- Schema.org JSON-LD -->
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@graph": [
+				{
+					"@type": "WebSite",
+					"@id": `${SITE.url}/#website`,
+					"url": SITE.url,
+					"name": SITE.name,
+					"description": SITE.description,
+					"inLanguage": "pt-BR"
+				},
+				{
+					"@type": "Organization",
+					"@id": `${SITE.url}/#organization`,
+					"name": SITE.name,
+					"url": SITE.url,
+					"logo": {
+						"@type": "ImageObject",
+						"url": new URL("/aprenda-c.ico", SITE.url).href
+					},
+					"sameAs": [
+						SITE.github,
+						`https://twitter.com/${SITE.twitter.replace('@', '')}`
+					]
+				},
+				{
+					"@type": "WebPage",
+					"@id": `${SITE.url}/#webpage`,
+					"url": SITE.url,
+					"name": SITE.title,
+					"isPartOf": { "@id": `${SITE.url}/#website` },
+					"about": { "@id": `${SITE.url}/#organization` },
+					"description": SITE.description,
+					"inLanguage": "pt-BR"
+				}
+			]
+		})} />
 
 		<ClientRouter />
 

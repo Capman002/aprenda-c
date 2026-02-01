@@ -6,6 +6,7 @@ import purgecss from "astro-purgecss";
 
 export default defineConfig({
   site: "https://aprendac.online",
+  trailingSlash: "always",
   integrations: [
     mdx(),
     sitemap(),

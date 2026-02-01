@@ -67,6 +67,8 @@ const jsonLd = {
         },
         image: {
             alt: SITE.defaultImageAlt,
+            width: 1200,
+            height: 630,
         }
       }}
       twitter={{
@@ -83,6 +85,9 @@ const jsonLd = {
         ],
       }}
     />
+
+    <!-- Sitemap -->
+    <link rel="sitemap" href="/sitemap-index.xml" />
 
     <!-- Schema.org JSON-LD -->
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
