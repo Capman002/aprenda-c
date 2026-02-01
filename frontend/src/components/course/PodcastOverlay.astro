@@ -287,7 +287,10 @@ const playlistSections = playlist.reduce(
     controller.setPlaylist(playlist);
 
     // Initial Active Track from DOM (current page)
-    const currentSlug = overlay.dataset.topicSlug;
+    // Fix: Read from fresh DOM element because overlay.dataset is stale due to persistence
+    const freshTopicEl = document.querySelector('[data-topic-progress-root]') as HTMLElement | null;
+    const currentSlug = freshTopicEl?.dataset?.topicSlug || overlay.dataset.topicSlug;
+
     if (currentSlug) {
         controller.loadTrackBySlug(currentSlug); 
         // Note: loadTrackBySlug might trigger autoplay if not careful, but we control that in Controller.
@@ -376,7 +379,7 @@ const playlistSections = playlist.reduce(
 
     controller.onTrackChange = (track) => {
          if (track) {
-              const newUrl = `/course/${track.slug}`;
+              const newUrl = `/${track.slug}`;
               if (!window.location.pathname.includes(track.slug)) {
                    navigate(newUrl);
               }
