@@ -12,39 +12,39 @@ COPY frontend .
 RUN bun run build
 
 # ==========================================
-# Stage 2: Runtime (Backend + GCC)
+# Stage 2: Runtime (Caddy + Bun API + GCC)
 # ==========================================
-FROM python:3.11-slim-bullseye AS runtime
+FROM debian:bookworm-slim AS runtime
 
-# Instalar dependências de sistema mínimas (GCC, Build Essentials)
-# REMOVEMOS curl, wget e git da imagem final para reduzir superfície de ataque
+# Instalar dependências de sistema
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc \
     build-essential \
-    unzip \
+    curl \
+    ca-certificates \
+    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar Bun manualmente (já que estamos numa base Debian Slim segura)
-# Usamos o script oficial, mas validando checksum seria ainda mais senior.
+# Instalar Caddy (servidor HTTP de alta performance)
+RUN curl -fsSL https://github.com/caddyserver/caddy/releases/download/v2.8.4/caddy_2.8.4_linux_amd64.tar.gz | tar -xz -C /usr/local/bin caddy
+
+# Instalar Bun
 ENV BUN_INSTALL=/usr/local/bun
 ENV PATH=$BUN_INSTALL/bin:$PATH
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://bun.sh/install | bash && \
-    apt-get remove -y curl && \
-    apt-get autoremove -y
+RUN curl -fsSL https://bun.sh/install | bash
+
+# Remover curl após instalações (reduz superfície de ataque)
+RUN apt-get remove -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Criar usuario não-root para execução
-# Isso é CRÍTICO: Se o hacker invadir, ele será 'appuser', não 'root'
 RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
 # Copiar dependências do backend
-# Copiar dependências do backend E o manifesto do frontend para satisfazer workspaces
 COPY package.json bun.lock ./
 COPY frontend/package.json ./frontend/package.json
-
 RUN bun install --production
 
 # Copiar arquivos do backend
@@ -53,20 +53,23 @@ COPY src ./src
 # Copiar build do frontend do Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Criar pasta de jobs com permissão para o usuário appuser
-RUN mkdir .jobs && chown appuser:appuser .jobs
+# Copiar configuração do Caddy
+COPY Caddyfile /etc/caddy/Caddyfile
 
-# Mudar para usuário limitado
-USER appuser
+# Copiar configuração do Supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Criar pasta de jobs com permissão
+RUN mkdir -p .jobs && chown -R appuser:appuser .jobs /app
 
 # Expor porta
-ENV PORT=3000
+ENV PORT=3001
 ENV NODE_ENV=production
-EXPOSE 3000
+EXPOSE 80
 
-# Healthcheck nativo do Docker
+# Healthcheck via Caddy
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD bun run src/healthcheck.ts || exit 1
+  CMD curl -f http://localhost/api/health || exit 1
 
-# Start
-CMD ["bun", "run", "src/server/index.ts"]
+# Start via Supervisor (gerencia Caddy + Bun)
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

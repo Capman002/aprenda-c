@@ -6,10 +6,10 @@ import type { ICompilerService, ExecutionResult } from "./types";
  * Knows about API endpoints, Validation, and Response parsing.
  */
 export class CompilerService implements ICompilerService {
-  // Em produção (Bun serve tudo), a API é relativa à raiz. Em Dev (Vite), a API está na 3000.
+  // Em produção, Caddy faz proxy. Em Dev, a API está na 3001.
   private readonly API_BASE = import.meta.env.PROD
     ? ""
-    : "http://localhost:3000";
+    : "http://localhost:3001";
 
   async run(files: Map<string, string>): Promise<ExecutionResult> {
     // Prepara payload (Adapta Mapa interno -> Array da API)

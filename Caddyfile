@@ -1,0 +1,44 @@
+# Caddyfile - Servidor de Alta Performance
+# Caddy serve arquivos estáticos e faz proxy para API
+
+:80 {
+    # Compressão automática (gzip, zstd, brotli)
+    encode zstd gzip
+
+    # Headers de segurança
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # CSP permitindo YouTube
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; media-src 'self' https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; worker-src 'self' blob:"
+    }
+
+    # API routes -> proxy para Elysia (localhost:3001)
+    handle /api/* {
+        reverse_proxy localhost:3001
+    }
+
+    # Assets imutáveis (cache agressivo de 1 ano)
+    @immutable path /_astro/* /fonts/*
+    handle @immutable {
+        header Cache-Control "public, max-age=31536000, immutable"
+        root * /app/frontend/dist
+        file_server
+    }
+
+    # Arquivos estáticos (cache de 1 hora com revalidação)
+    handle {
+        header Cache-Control "public, max-age=3600, stale-while-revalidate=86400"
+        root * /app/frontend/dist
+        try_files {path} {path}/index.html {path}.html /404.html
+        file_server
+    }
+
+    # Logs em formato compacto
+    log {
+        output stdout
+        format console
+    }
+}
