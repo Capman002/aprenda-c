@@ -18,7 +18,8 @@ export default defineConfig({
     port: 4000,
   },
   prefetch: {
-    defaultStrategy: "hover", // Estratégia eficiente: carrega apenas ao passar o mouse
+    prefetchAll: true, // Prefetch de todos os links visíveis para navegação instantânea
+    defaultStrategy: "viewport", // Pré-carrega quando o link aparece no viewport
   },
   markdown: {
     shikiConfig: {

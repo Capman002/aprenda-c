@@ -53,10 +53,15 @@ export const frontendServing = (app: Elysia) => {
         }
 
         // 2. Resolução de Rotas (SSG)
+        // Cache HTML: navegação instantânea + revalidação em background
+        const htmlCacheControl =
+          "public, max-age=60, stale-while-revalidate=3600";
+
         // /caminho/index.html
         let htmlFile = Bun.file(join(frontendDistPath, path, "index.html"));
         if (await htmlFile.exists()) {
           set.headers["Content-Type"] = "text/html";
+          set.headers["Cache-Control"] = htmlCacheControl;
           return htmlFile;
         }
 
@@ -64,6 +69,7 @@ export const frontendServing = (app: Elysia) => {
         htmlFile = Bun.file(join(frontendDistPath, `${path}.html`));
         if (await htmlFile.exists()) {
           set.headers["Content-Type"] = "text/html";
+          set.headers["Cache-Control"] = htmlCacheControl;
           return htmlFile;
         }
 
@@ -74,6 +80,7 @@ export const frontendServing = (app: Elysia) => {
           (await htmlFile.exists())
         ) {
           set.headers["Content-Type"] = "text/html";
+          set.headers["Cache-Control"] = htmlCacheControl;
           return htmlFile;
         }
 

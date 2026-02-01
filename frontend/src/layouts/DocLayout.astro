@@ -60,6 +60,7 @@ const jsonLd = {
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com;" />
 		
     <SEO
       title={frontmatter.title}
@@ -144,14 +145,14 @@ const jsonLd = {
 						<!-- Navigation Footer -->
 						<footer class="doc-footer">
 							{prev ? (
-								<a href={`/${prev.slug}`} class="nav-card prev">
+								<a href={`/${prev.slug}`} class="nav-card prev" data-astro-prefetch="viewport">
 									<div class="nav-label"><Icon name="chevron-down" class="rotate-90" size={12} /> Anterior</div>
 									<div class="nav-title">{prev.data.title}</div>
 								</a>
 							) : <div />}
 
 							{next ? (
-								<a href={`/${next.slug}`} class="nav-card next">
+								<a href={`/${next.slug}`} class="nav-card next" data-astro-prefetch="viewport">
 									<div class="nav-label">Próximo <Icon name="chevron-right" size={12} /></div>
 									<div class="nav-title">{next.data.title}</div>
 								</a>
