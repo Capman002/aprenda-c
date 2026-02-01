@@ -21,7 +21,10 @@ import Footer from '../components/landing/Footer.astro';
 	<head>
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/x-icon" href="/aprenda-c.ico" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+		<!-- Preconnect to CDN for faster resource loading -->
+		<link rel="preconnect" href="https://static.cloudflareinsights.com" crossorigin />
 		
 		<!-- SEO Primário -->
 		<title>{SITE.title}</title>
@@ -94,6 +97,16 @@ import Footer from '../components/landing/Footer.astro';
 		<ClientRouter />
 
 		<style is:global>
+		/* Font-display swap to avoid FOIT and improve Speed Index */
+		@font-face {
+			font-family: 'Inter';
+			font-display: swap;
+		}
+		@font-face {
+			font-family: 'JetBrains Mono';
+			font-display: swap;
+		}
+
 		/* Variáveis de Tema */
 		:root {
 			--bg-app: #050505;
