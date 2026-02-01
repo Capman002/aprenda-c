@@ -1,22 +1,13 @@
 # ==========================================
-# Stage 1: Build Frontend (Astro)
+# Aprenda C - Backend API (Compilador)
 # ==========================================
-FROM oven/bun:latest AS frontend-builder
-WORKDIR /app/frontend
-# Copiar apenas arquivos de dependência para cache layer
-COPY frontend/package.json frontend/bun.lock ./
-RUN bun install
-
-# Copiar código fonte e buildar
-COPY frontend .
-RUN bun run build
-
+# Este container contém APENAS a API do compilador.
+# O frontend é servido via Cloudflare Pages.
 # ==========================================
-# Stage 2: Runtime (Caddy + Bun API + GCC)
-# ==========================================
-FROM debian:bookworm-slim AS runtime
 
-# Instalar dependências de sistema
+FROM debian:bookworm-slim
+
+# Instalar dependências de sistema (GCC + Bun)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc \
@@ -24,18 +15,14 @@ RUN apt-get update && \
     curl \
     unzip \
     ca-certificates \
-    supervisor \
     && rm -rf /var/lib/apt/lists/*
-
-# Instalar Caddy (servidor HTTP de alta performance)
-RUN curl -fsSL https://github.com/caddyserver/caddy/releases/download/v2.8.4/caddy_2.8.4_linux_amd64.tar.gz | tar -xz -C /usr/local/bin caddy
 
 # Instalar Bun
 ENV BUN_INSTALL=/usr/local/bun
 ENV PATH=$BUN_INSTALL/bin:$PATH
 RUN curl -fsSL https://bun.sh/install | bash
 
-# Remover curl após instalações (reduz superfície de ataque)
+# Remover curl após instalação (reduz superfície de ataque)
 RUN apt-get remove -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -43,34 +30,29 @@ WORKDIR /app
 # Criar usuario não-root para execução
 RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
-# Copiar dependências do backend
+# Copiar dependências do backend (apenas o necessário)
 COPY package.json bun.lock ./
-COPY frontend/package.json ./frontend/package.json
+# O workspace espera frontend/package.json, então criamos um dummy
+RUN mkdir -p frontend && echo '{"name":"frontend-dummy","version":"1.0.0"}' > frontend/package.json
 RUN bun install --production
 
 # Copiar arquivos do backend
 COPY src ./src
 
-# Copiar build do frontend do Stage 1
-COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
-
-# Copiar configuração do Caddy
-COPY Caddyfile /etc/caddy/Caddyfile
-
-# Copiar configuração do Supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
 # Criar pasta de jobs com permissão
 RUN mkdir -p .jobs && chown -R appuser:appuser .jobs /app
 
-# Expor porta
-ENV PORT=3001
+# Mudar para usuário limitado
+USER appuser
+
+# Configuração
+ENV PORT=3000
 ENV NODE_ENV=production
-EXPOSE 80
+EXPOSE 3000
 
-# Healthcheck via Caddy
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost/api/health || exit 1
+  CMD bun run src/healthcheck.ts || exit 1
 
-# Start via Supervisor (gerencia Caddy + Bun)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Start
+CMD ["bun", "run", "src/server/index.ts"]

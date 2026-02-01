@@ -7,7 +7,7 @@
     "frontend"
   ],
   "scripts": {
-    "dev:api": "PORT=3001 bun run --watch src/server/index.ts",
+    "dev:api": "bun run --watch src/server/index.ts",
     "dev:frontend": "cd frontend && bun run dev",
     "dev": "bun run dev:api",
     "start": "bun run src/server/index.ts",
