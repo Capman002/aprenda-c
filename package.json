@@ -1,11 +1,8 @@
 {
-  "name": "aprenda-c",
+  "name": "aprenda-c-api",
   "version": "1.0.0",
   "module": "index.ts",
   "type": "module",
-  "workspaces": [
-    "frontend"
-  ],
   "scripts": {
     "dev:api": "bun run --watch src/server/index.ts",
     "dev:frontend": "cd frontend && bun run dev",

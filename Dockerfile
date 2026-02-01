@@ -30,11 +30,11 @@ WORKDIR /app
 # Criar usuario não-root para execução
 RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
-# Copiar dependências do backend (apenas o necessário)
-COPY package.json bun.lock ./
-# O workspace espera frontend/package.json, então criamos um dummy
-RUN mkdir -p frontend && echo '{"name":"frontend-dummy","version":"1.0.0"}' > frontend/package.json
-RUN bun install --production
+# Copiar apenas package.json do backend (sem workspace)
+COPY package.json ./
+
+# Instalar dependências SEM o lockfile do monorepo
+RUN bun install --no-save --production
 
 # Copiar arquivos do backend
 COPY src ./src

@@ -1,11 +1,30 @@
+# Ignorar todo o frontend (deploy separado no Cloudflare Pages)
+frontend
+
+# Node modules
 node_modules
-frontend/node_modules
+.bun
+
+# Git
 .git
+.gitignore
+
+# Env files
 .env
 .env.*
-.bun
+
+# Build artifacts
 dist
-frontend/dist
+
+# IDE
 .vscode
 .idea
+
+# Logs
 *.log
+
+# Lockfile do monorepo (não necessário no container)
+bun.lock
+
+# GitHub Actions
+.github
