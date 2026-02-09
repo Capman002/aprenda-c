@@ -25,14 +25,19 @@ export class TerminalAdapter {
 
     // Initialize Terminal
     this.term = new win.Terminal({
-      cursorBlinking: true,
-      fontFamily: "'JetBrains Mono', monospace",
+      cursorBlink: true,
+      fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
       fontSize: 14,
+      lineHeight: 1.4,
       theme: {
-        background: "#0D0D0D", // Matches OutputPanel bg
-        foreground: "#cccccc",
+        background: "#0D0D0D",
+        foreground: "#e4e4e7",
+        cursor: "#3b82f6",
+        cursorAccent: "#0D0D0D",
+        selectionBackground: "rgba(59, 130, 246, 0.3)",
       },
-      convertEol: true, // Handle \n correctly
+      convertEol: true,
+      scrollback: 1000,
     });
 
     // Initialize Fit Addon
@@ -45,14 +50,32 @@ export class TerminalAdapter {
     this.fitAddon?.fit();
 
     // Bind Resize
-    window.addEventListener("resize", () => {
+    const resizeObserver = new ResizeObserver(() => {
       this.fitAddon?.fit();
     });
+    resizeObserver.observe(container);
 
-    // Handle Input
+    // Handle Input → Local Echo + WebSocket
     this.term.onData((data: string) => {
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ type: "stdin", data }));
+        // Local echo: mostra o que o usuário está digitando
+        if (data === "\r") {
+          // Enter → nova linha visual + envia \n para o processo
+          this.term.write("\r\n");
+          this.socket.send(JSON.stringify({ type: "stdin", data: "\n" }));
+        } else if (data === "\x7f" || data === "\b") {
+          // Backspace → apaga caractere visual
+          this.term.write("\b \b");
+          this.socket.send(JSON.stringify({ type: "stdin", data: "\b" }));
+        } else if (data === "\x03") {
+          // Ctrl+C → encerrar processo
+          this.socket.send(JSON.stringify({ type: "stdin", data: data }));
+          this.term.write("^C\r\n");
+        } else {
+          // Caractere normal → exibe e envia
+          this.term.write(data);
+          this.socket.send(JSON.stringify({ type: "stdin", data }));
+        }
       }
     });
   }
@@ -67,13 +90,10 @@ export class TerminalAdapter {
     const host = isProd ? "api.aprendac.online" : "localhost:3000";
     const url = `${protocol}://${host}/api/ws/terminal`;
 
-    this.term.writeln("\x1b[36mInitializing connection...\x1b[0m");
-
     this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
-      this.term.writeln("\x1b[32mConnected.\x1b[0m");
-
+      // Nenhuma mensagem verbosa — já abre limpo
       // Prepare payload
       const payloadFiles = Array.from(files.entries()).map(
         ([name, content]) => ({
@@ -95,43 +115,54 @@ export class TerminalAdapter {
       try {
         const msg = JSON.parse(event.data);
 
-        if (msg.type === "stdout" || msg.type === "stderr") {
+        if (msg.type === "stdout") {
           this.term.write(msg.data);
-        } else if (msg.type === "system") {
-          this.term.writeln(`\x1b[90m[System] ${msg.message}\x1b[0m`);
-        } else if (msg.type === "error") {
-          this.term.writeln(`\x1b[31m[Error] ${msg.message}\x1b[0m`);
+        } else if (msg.type === "stderr") {
+          // Erros de runtime em vermelho
+          this.term.write(`\x1b[31m${msg.data}\x1b[0m`);
+        } else if (msg.type === "compile_error") {
+          // Erros de compilação — exibir de forma clara
+          this.term.writeln("\x1b[1;31m✗ Erro de compilação:\x1b[0m");
+          this.term.writeln("");
+          this.term.write(msg.data);
         } else if (msg.type === "exit") {
-          this.term.writeln(
-            `\n\x1b[33mProgram exited with code ${msg.code}\x1b[0m`,
-          );
-          this.onExitCallback?.(msg.code);
+          const code = msg.code;
+          if (code === 0) {
+            this.term.writeln(`\n\x1b[32m✓ Programa finalizado.\x1b[0m`);
+          } else {
+            this.term.writeln(
+              `\n\x1b[33m⚠ Programa encerrou com código ${code}\x1b[0m`,
+            );
+          }
+          this.onExitCallback?.(code);
           this.socket?.close();
+        } else if (msg.type === "error") {
+          this.term.writeln(`\x1b[31m✗ ${msg.message}\x1b[0m`);
         }
+        // Ignora 'system' silenciosamente
       } catch (e) {
         console.error("Failed to parse WS message", e);
       }
     };
 
     this.socket.onclose = () => {
-      this.term.writeln("\n\x1b[90mConnection closed.\x1b[0m");
       this.socket = null;
     };
 
     this.socket.onerror = (err) => {
-      this.term.writeln(`\n\x1b[31mConnection error.\x1b[0m`);
+      this.term.writeln(`\x1b[31m✗ Erro de conexão com o servidor.\x1b[0m`);
       console.error(err);
     };
   }
 
   public clear() {
     this.term?.clear();
+    this.term?.reset();
   }
 
   public show() {
     if (this.container) {
       this.container.style.display = "block";
-      // Hide standard output if visible? Handled by PlaygroundController
       this.fitAddon?.fit();
     }
   }

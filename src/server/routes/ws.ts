@@ -1,7 +1,6 @@
 import { Elysia, t } from "elysia";
 import { createJob, cleanupJob } from "../compiler/service";
 import { join } from "path";
-import { writeFile } from "fs/promises";
 import { Subprocess } from "bun";
 
 // Tipagem do estado da conexão WS
@@ -12,8 +11,7 @@ interface WSState {
 }
 
 export const wsRoutes = new Elysia({ prefix: "/api/ws" }).ws("/terminal", {
-  // Schema de validação das mensagens
-  body: t.Any(), // Aceita qualquer JSON por enquanto, validamos dentro
+  body: t.Any(),
 
   async open(ws) {
     ws.data = { jobId: undefined, tempDir: undefined, process: undefined };
@@ -32,68 +30,76 @@ export const wsRoutes = new Elysia({ prefix: "/api/ws" }).ws("/terminal", {
           return;
         }
 
-        ws.send({ type: "system", message: "Preparando ambiente..." });
-
         // Criar Job isolado
         const { jobId, tempDir } = await createJob(files);
         state.jobId = jobId;
         state.tempDir = tempDir;
 
-        // Script de Compilação e Execução
-        const runScriptContent = `
-        #!/bin/bash
-        # Compilação
-        gcc -fdiagnostics-color=always -Wall -Wextra -pthread -o app *.c -lm
-        COMPILE_STATUS=$?
-        
-        if [ $COMPILE_STATUS -ne 0 ]; then
-            exit 1
-        fi
-        
-        # Execução Interativa
-        # stdbuf -i0 -o0 -e0 força buffers zero para stdin/out/err
-        # Se stdbuf não existir, tentamos rodar direto.
-        if command -v stdbuf &> /dev/null; then
-            stdbuf -i0 -o0 -e0 ./app
-        else
-            ./app
-        fi
-        `;
-
-        await writeFile(
-          join(tempDir, "run.sh"),
-          runScriptContent.replace(/\r\n/g, "\n"),
+        // ── Fase 1: Compilação (silenciosa) ──
+        const compileProc = Bun.spawn(
+          [
+            "gcc",
+            "-Wall",
+            "-Wextra",
+            "-pthread",
+            "-o",
+            "app",
+            ...files.map((f: any) => f.name.replace(/[^a-zA-Z0-9._-]/g, "")),
+            "-lm",
+          ],
           {
-            mode: 0o755,
+            cwd: tempDir,
+            stdout: "pipe",
+            stderr: "pipe",
           },
         );
 
-        ws.send({ type: "system", message: "Compilando..." });
+        const compileExitCode = await compileProc.exited;
 
-        // Spawn do Processo
-        // Usamos 'cat' como pipe simples se stdbuf falhar, mas o ideal é o próprio Bun gerenciar.
-        // Importante: Bun.spawn com stdin: 'pipe' permite escrevermos nele.
-        const proc = Bun.spawn(["bash", "run.sh"], {
+        // Captura stderr da compilação
+        const compileStderr = await new Response(compileProc.stderr).text();
+
+        // Se a compilação falhou, exibir os erros e parar
+        if (compileExitCode !== 0) {
+          ws.send({ type: "compile_error", data: compileStderr });
+          ws.send({ type: "exit", code: 1 });
+          await cleanupJob(tempDir);
+          state.tempDir = undefined;
+          return;
+        }
+
+        // ── Fase 2: Execução Interativa (limpa) ──
+        // stdbuf força buffers zero para I/O imediato
+        const execArgs: string[] = [];
+        try {
+          // Testa se stdbuf existe
+          Bun.spawnSync(["which", "stdbuf"], { cwd: tempDir });
+          execArgs.push("stdbuf", "-i0", "-o0", "-e0", "./app");
+        } catch {
+          execArgs.push("./app");
+        }
+
+        const proc = Bun.spawn(execArgs, {
           cwd: tempDir,
           stdin: "pipe",
           stdout: "pipe",
-          stderr: "pipe", // Podemos misturar ou separar
-          env: { ...process.env, TERM: "xterm-256color" }, // Force colored output
+          stderr: "pipe",
+          env: { ...process.env, TERM: "dumb" }, // Sem cores ANSI extras do sistema
         });
 
         state.process = proc;
 
-        // Stream stdout -> WS
+        // Stream stdout → WS
         readStream(proc.stdout, (chunk) => {
           ws.send({ type: "stdout", data: chunk });
         });
 
-        // Stream stderr -> WS
+        // Stream stderr → WS (erros de runtime apenas)
         readStream(proc.stderr, (chunk) => {
           ws.send({ type: "stderr", data: chunk });
         });
 
-        // Wait for exit
+        // Aguardar finalização
         proc.exited.then((code) => {
           ws.send({ type: "exit", code });
           cleanup(state);
@@ -110,11 +116,6 @@ export const wsRoutes = new Elysia({ prefix: "/api/ws" }).ws("/terminal", {
         state.process.stdin.write(message.data);
         state.process.stdin.flush();
       }
-    }
-
-    // 3. Resize (Opcional, se usarmos pty real no futuro)
-    if (message.type === "resize") {
-      // Ignorar por enquanto
     }
   },
 
@@ -136,7 +137,7 @@ async function readStream(
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      callback(decoder.decode(value, { stream: true })); // stream: true mantém estado de multi-byte chars
+      callback(decoder.decode(value, { stream: true }));
     }
   } catch (e) {
     // Ignore stream errors on close
@@ -145,7 +146,7 @@ async function readStream(
 
 async function cleanup(state: WSState) {
   if (state.process) {
-    state.process.kill(); // Assegura morte do processo
+    state.process.kill();
     state.process = undefined;
   }
   if (state.tempDir) {
