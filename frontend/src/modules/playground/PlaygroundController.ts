@@ -1,6 +1,7 @@
 import { ProjectManager } from "./ProjectManager";
 import { CompilerService } from "./CompilerService";
 import { MonacoAdapter } from "./MonacoAdapter";
+import { TerminalAdapter } from "./TerminalAdapter";
 import { PROJECT_TEMPLATES } from "./ProjectTemplates";
 import type { IProjectManager, ICompilerService, ICodeEditor } from "./types";
 
@@ -13,18 +14,19 @@ export class PlaygroundController {
   // Modules
   private project: IProjectManager;
   private compiler: ICompilerService;
-  private editor: MonacoAdapter; // Use explicit type for addCommand access
+
+  private editor: MonacoAdapter;
+  private terminal: TerminalAdapter;
 
   // UI Cache
   private ui = {
     tabs: document.getElementById("editor-tabs"),
     fileTree: document.getElementById("file-tree"),
     runBtn: document.getElementById("run-btn"),
-    output: document.getElementById("output"),
     status: document.getElementById("status-indicator"),
     execStats: document.getElementById("execution-stats"),
-    stdinSection: document.getElementById("stdin-section"),
-    stdinInput: document.getElementById("stdin-input") as HTMLTextAreaElement,
+    outputContainer: document.getElementById("output"),
+    terminalContainer: document.getElementById("terminal"),
     loading: document.getElementById("editor-loading"),
   };
 
@@ -32,6 +34,7 @@ export class PlaygroundController {
     this.project = new ProjectManager();
     this.compiler = new CompilerService();
     this.editor = new MonacoAdapter();
+    this.terminal = new TerminalAdapter();
   }
 
   async init() {
@@ -40,6 +43,8 @@ export class PlaygroundController {
     if (editorContainer) {
       try {
         await this.editor.init(editorContainer);
+        // Initialize Terminal
+        await this.terminal.init("terminal");
 
         // Bind Editor Events
         this.editor.onUserChange((newContent) => {
@@ -234,10 +239,7 @@ export class PlaygroundController {
     // Output Actions
     document
       .getElementById("clear-output-btn")
-      ?.addEventListener("click", () => this.clearOutput());
-    document
-      .getElementById("toggle-stdin")
-      ?.addEventListener("click", () => this.toggleStdin());
+      ?.addEventListener("click", () => this.terminal.clear());
 
     // Explorer Actions
     document
@@ -434,22 +436,19 @@ export class PlaygroundController {
 
     // UI State: Running
     this.setRunningState(true);
-    this.clearOutput(true); // Keep 'Running...' msg
 
-    // Get Input
-    const stdin =
-      this.ui.stdinSection?.style.display !== "none"
-        ? this.ui.stdinInput?.value
-        : undefined;
+    // Switch to Interactive Terminal Mode
+    if (this.ui.outputContainer) this.ui.outputContainer.style.display = "none";
+    if (this.ui.terminalContainer)
+      this.ui.terminalContainer.style.display = "block";
 
-    // Execute
-    const result = await this.compiler.run(this.project.getFiles());
+    // Execute via WebSocket Terminal
+    this.terminal.runInteractive(this.project.getFiles());
 
-    // Render Result
-    this.renderOutput(result);
-
-    // UI State: Ready
-    this.setRunningState(false);
+    // Wait for exit to reset state
+    this.terminal.onExit((code) => {
+      this.setRunningState(false);
+    });
   }
 
   // --- Rendering methods ---
@@ -579,7 +578,7 @@ export class PlaygroundController {
   }
 
   private renderOutput(result: any) {
-    if (!this.ui.output) return;
+    if (!this.ui.outputContainer) return;
 
     // Robust ANSI Parser
     const parseAnsi = (text: string) => {
@@ -652,7 +651,7 @@ export class PlaygroundController {
       html += `<div class="output-section info"><pre>Sem saída.</pre></div>`;
     }
 
-    this.ui.output.innerHTML = html;
+    this.ui.outputContainer.innerHTML = html;
 
     if (this.ui.execStats) {
       this.ui.execStats.style.display = "flex";
@@ -662,23 +661,16 @@ export class PlaygroundController {
   }
 
   private clearOutput(keepRunningObj = false) {
-    if (keepRunningObj && this.ui.output) {
-      this.ui.output.innerHTML =
+    if (keepRunningObj && this.ui.outputContainer) {
+      this.ui.outputContainer.innerHTML =
         '<div class="output-welcome"><div class="loading-spinner"></div><p>Compilando e Executando...</p></div>';
       return;
     }
-    if (this.ui.output) {
-      this.ui.output.innerHTML =
+    if (this.ui.outputContainer) {
+      this.ui.outputContainer.innerHTML =
         '<div class="output-welcome"><p>Output limpo.</p></div>';
     }
     if (this.ui.execStats) this.ui.execStats.style.display = "none";
-  }
-
-  private toggleStdin() {
-    if (this.ui.stdinSection) {
-      const isHidden = this.ui.stdinSection.style.display === "none";
-      this.ui.stdinSection.style.display = isHidden ? "block" : "none";
-    }
   }
 
   private async checkRuntime() {

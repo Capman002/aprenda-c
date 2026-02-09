@@ -141,10 +141,7 @@ import { SITE } from '../site.config';
             </div>
 					</div>
 					<div class="footer-right">
-						<button id="toggle-stdin" class="footer-btn">
-							<Icon name="terminal" size={12} />
-							stdin
-						</button>
+
 						<button id="download-project" class="footer-btn">
 							<Icon name="download" size={12} />
 							Baixar
@@ -176,6 +173,11 @@ import { SITE } from '../site.config';
 		</div>
 	</body>
 </html>
+
+<!-- XTerm.js (CDN) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+<script is:inline src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
 
 <!-- Monaco Editor Loader (CDN) -->
 <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>

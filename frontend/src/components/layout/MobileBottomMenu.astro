@@ -9,7 +9,7 @@ const isActive = (path: string) => {
   return false;
 };
 
-const isCoursePage = pathname !== '/' && pathname !== '/playground';
+const isCoursePage = pathname !== '/' && !pathname.startsWith('/playground');
 ---
 
 <nav class="mobile-bottom-menu">

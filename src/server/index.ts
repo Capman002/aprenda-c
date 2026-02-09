@@ -3,6 +3,7 @@ import { cors } from "@elysiajs/cors";
 import { rateLimit } from "elysia-rate-limit";
 import { systemRoutes } from "./routes/system";
 import { compilerRoutes } from "./routes/compiler";
+import { wsRoutes } from "./routes/ws";
 
 const PORT = parseInt(process.env.PORT ?? "3000");
 const isProduction = process.env.NODE_ENV === "production";
@@ -40,7 +41,8 @@ const app = new Elysia()
   )
   // API Routes
   .use(systemRoutes)
-  .use(compilerRoutes);
+  .use(compilerRoutes)
+  .use(wsRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Aprenda C API running at http://localhost:${PORT}`);

@@ -88,6 +88,26 @@ function validateSecurity(code: string): string | null {
   return null;
 }
 
+export async function createJob(files: { name: string; content: string }[]) {
+  const jobId = crypto.randomUUID();
+  const tempDir = join(process.cwd(), ".jobs", jobId);
+
+  await mkdir(tempDir, { recursive: true });
+
+  for (const file of files) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "");
+    await writeFile(join(tempDir, safeName), file.content);
+  }
+
+  return { jobId, tempDir };
+}
+
+export async function cleanupJob(tempDir: string) {
+  try {
+    await rm(tempDir, { recursive: true, force: true });
+  } catch {}
+}
+
 export async function executeCode(
   req: ExecuteRequest,
 ): Promise<ExecuteResponse> {
@@ -113,19 +133,10 @@ export async function executeCode(
   await executionQueue.acquire();
 
   try {
-    // 2. Criar diretório isolado
-    const jobId = crypto.randomUUID();
-    const tempDir = join(process.cwd(), ".jobs", jobId); // Usar diretório local para evitar /tmp compartilhado inseguro
+    // 2. Criar diretório e arquivos
+    const { tempDir } = await createJob(req.files);
 
     try {
-      await mkdir(tempDir, { recursive: true });
-
-      // 3. Gravar arquivos
-      for (const file of req.files) {
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "");
-        await writeFile(join(tempDir, safeName), file.content);
-      }
-
       if (req.stdin) {
         await writeFile(join(tempDir, "input.txt"), req.stdin);
       }
@@ -201,8 +212,7 @@ export async function executeCode(
     } finally {
       // 7. Cleanup
       // Executa rm no background sem await para liberar a resposta pro cliente mais rápido
-      // O sistema operacional lida bem com I/O assíncrono
-      rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      cleanupJob(tempDir);
     }
   } catch (err) {
     console.error("Execution Error:", err);

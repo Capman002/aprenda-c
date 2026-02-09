@@ -27,10 +27,9 @@ import Icon from '../ui/Icon.astro';
       </div>
     </div>
     
-    <div class="input-section" id="stdin-section" style="display: none;">
-      <label for="stdin-input">Entrada (stdin):</label>
-      <textarea id="stdin-input" placeholder="Dados de entrada..."></textarea>
-    </div>
+    <div id="terminal" class="terminal-container" style="display: none;"></div>
+    
+
   </div>
   
   <div class="execution-stats" id="execution-stats" style="display: none;">
@@ -238,4 +237,11 @@ import Icon from '../ui/Icon.astro';
     font-family: 'JetBrains Mono', monospace;
   }
 
+  /* Terminal */
+  .terminal-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    padding: 12px;
+  }
 </style>

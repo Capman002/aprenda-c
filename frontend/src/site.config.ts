@@ -16,12 +16,11 @@ export const SITE = {
   // Configurações de UI
   postsPerPage: 10,
 };
-
 export const NAVIGATION = [
   {
     label: "Curso",
-    href: "/historia-programacao",
+    href: "/historia-programacao/",
   },
-  { label: "Playground", href: "/playground" },
+  { label: "Playground", href: "/playground/" },
   { label: "GitHub", href: "https://github.com/Capman002/aprenda-c" },
 ];
