@@ -41,12 +41,12 @@ export const wsRoutes = new Elysia({ prefix: "/api/ws" }).ws("/terminal", {
   body: t.Any(),
 
   async open(ws) {
-    ws.data = {
+    (ws as any).data = {
       jobId: undefined,
       tempDir: undefined,
       process: undefined,
       timeoutId: undefined,
-    };
+    } as WSState;
     console.log(`[WS] Cliente conectado: ${ws.id}`);
   },
 
@@ -203,9 +203,12 @@ export const wsRoutes = new Elysia({ prefix: "/api/ws" }).ws("/terminal", {
     // ─── 2. Input do Usuário (stdin) ───
     // Recebe a linha completa do frontend (após Enter)
     if (message.type === "stdin") {
-      if (state.process && state.process.stdin) {
+      if (
+        state.process &&
+        state.process.stdin &&
+        typeof state.process.stdin !== "number"
+      ) {
         state.process.stdin.write(message.data);
-        state.process.stdin.flush();
       }
     }
   },
